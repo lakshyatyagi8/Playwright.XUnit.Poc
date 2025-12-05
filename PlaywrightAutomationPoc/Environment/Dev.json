@@ -1,0 +1,14 @@
+
+{
+    "baseURL": "https://maps.google.com",
+    "browserType": "chrome",
+    "headless": false,
+    "slowMo": 800,
+    "devtools": true,
+    "defaultTimeout": 10000,
+    "viewport": 
+        { "width": 1280, "height": 720 },
+    "trace": "on-first-retry",
+    "video": "retain-on-failure",
+    "screenshot": "only-on-failure"
+}

@@ -1,0 +1,151 @@
+using Microsoft.Playwright;
+
+namespace PlaywrightAutomationPoc.GoogleMaps.Pages
+{
+    public class MapsPage : IMapsPage
+    {
+        /// <summary>
+        /// The Playwright page instance used for interacting with the Google Maps web page.
+        /// </summary>
+        private readonly IPage _page;
+
+        // Locators are defined as properties (Encapsulation)
+        // Note: Google Maps selectors are complex; generic IDs used here for stability
+        private ILocator SearchBox => _page.Locator("#searchboxinput");
+        
+        private ILocator Directions => _page.Locator("//button[@id='hArJGc']");
+
+        private ILocator StartingPoint => _page.GetByPlaceholder("Choose starting point, or click on the map...");
+        private ILocator AddDestination => _page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']");
+
+        private ILocator SearchButton => _page.Locator("#searchbox-searchbutton");
+        // Selects the first result that looks like a location link
+        private ILocator FirstResult => _page.Locator("a[href*='/place/']").First; 
+        private ILocator CookieButton => _page.GetByRole(AriaRole.Button, new() { Name = "Accept all" });
+        private ILocator Headline => _page.Locator("h1.DUwDvf"); // The large text on the destination card
+        private ILocator SearchStopOption => _page.Locator("//div[@class='KG8wXc fontBodyMedium']");
+        private ILocator RouteOption1Time => _page.Locator("//div[@id='section-directions-trip-0']//div[contains(@class,'Fk3sm fontHeadlineSmall')]");
+
+        public MapsPage(IPage page)
+        {
+            _page = page;
+        }
+
+        /// <summary>
+        /// Navigates to the specified base URL.
+        /// </summary>
+        /// <param name="baseUrl"></param>
+        /// <returns></returns>
+        public async Task NavigateAsync(string baseUrl)
+        {
+            await _page.GotoAsync(baseUrl);
+        }
+
+        /// <summary>
+        /// Handles cookie consent by clicking the accept button if it appears.
+        /// </summary>
+        /// <returns></returns>
+        public async Task HandleCookiesAsync()
+        {
+            // Fail-safe: Only click if it appears (timeout reduced to avoid long waits)
+            try 
+            {
+                if (await CookieButton.IsVisibleAsync())
+                {
+                    await CookieButton.ClickAsync();
+                }
+            } 
+            catch { /* Ignore if cookie banner doesn't appear */ }
+        }
+
+        /// <summary>
+        /// Searches for a location using the search box.
+        /// </summary>
+        /// <param name="locationName"></param>
+        /// <returns></returns>
+        public async Task SearchLocationAsync(string locationName)
+        {
+            await SearchBox.WaitForAsync(); // Explicit wait for stability
+            await SearchBox.FillAsync(locationName);
+            await SearchButton.ClickAsync();
+        }
+
+        /// <summary>
+        /// Opens the directions panel.
+        /// </summary>
+        /// <returns></returns>
+        private async Task OpenDirectionsAsync()
+        {
+            await Directions.WaitForAsync(new LocatorWaitForOptions { Timeout = 10000 });
+            await Directions.ClickAsync();
+        }
+        /// <summary>
+        /// Clicks on a given locator after waiting for it to be ready.
+        /// </summary>
+        /// <param name="locator"></param>
+        /// <returns></returns>
+        private async Task ClickOnLocator(ILocator locator)
+        {
+            // Force the mouse over (hover)
+            //await locator.HoverAsync(new LocatorHoverOptions { Force = true });
+            await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+            await locator.ClickAsync();
+        }
+        /// <summary>
+        /// Sets text value on a given locator after waiting for it to be ready.
+        /// </summary>
+        /// <param name="locator"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private async Task SetTextValueAndEnterOnLocator(ILocator locator, string value, ILocator? waitForVisiblePostFillLocator = null)
+        {
+            await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+            await locator.FillAsync(value);
+            if (waitForVisiblePostFillLocator != null)
+            {
+                await waitForVisiblePostFillLocator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
+            }
+            await locator.PressAsync("Enter");
+        }
+        
+        public async Task SetRouteLocationsAndSearchAsync(string startLocationName, string [] arrStopLocations = null!)
+        {
+            if (arrStopLocations.Length < 1)
+                throw new ArgumentException("At least one stop locations are required for a route.");
+
+            await OpenDirectionsAsync();
+            // Fill in starting point and destination
+            await SetTextValueAndEnterOnLocator(StartingPoint, startLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
+            
+            for(int i = 0; i < arrStopLocations.Length; i++)
+            {
+                if(i > 0)
+                {
+                    await ClickOnLocator(_page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']"));
+                }
+                var stopLocationName = arrStopLocations[i];
+                var stopPoint = _page.Locator("//input[@placeholder='Choose destination, or click on the map...']");                
+                await SetTextValueAndEnterOnLocator(stopPoint, stopLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
+            }
+        }
+
+        public async Task SelectFirstResultAsync()
+        {
+            // Wait for the result list to populate
+            await FirstResult.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+            await FirstResult.ClickAsync();
+        }
+
+        public async Task<string> GetHeadlineAsync()
+        {
+            await Headline.WaitForAsync();
+            return await Headline.InnerTextAsync();
+        }
+        
+        public async Task<string> GetRouteOptionTimeAsync()
+        {
+            await RouteOption1Time.WaitForAsync();
+            return await RouteOption1Time.InnerTextAsync();
+        }
+    }
+}
