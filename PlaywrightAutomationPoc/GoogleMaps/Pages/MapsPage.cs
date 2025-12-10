@@ -1,4 +1,5 @@
 using Microsoft.Playwright;
+using PlaywrightAutomationPoc.AutoFramework.Extensions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
@@ -79,34 +80,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
             await Directions.WaitForAsync(new LocatorWaitForOptions { Timeout = 10000 });
             await Directions.ClickAsync();
         }
-        /// <summary>
-        /// Clicks on a given locator after waiting for it to be ready.
-        /// </summary>
-        /// <param name="locator"></param>
-        /// <returns></returns>
-        private async Task ClickOnLocator(ILocator locator)
-        {
-            // Force the mouse over (hover)
-            //await locator.HoverAsync(new LocatorHoverOptions { Force = true });
-            await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
-            await locator.ClickAsync();
-        }
-        /// <summary>
-        /// Sets text value on a given locator after waiting for it to be ready.
-        /// </summary>
-        /// <param name="locator"></param>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private async Task SetTextValueAndEnterOnLocator(ILocator locator, string value, ILocator? waitForVisiblePostFillLocator = null)
-        {
-            await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible });
-            await locator.FillAsync(value);
-            if (waitForVisiblePostFillLocator != null)
-            {
-                await waitForVisiblePostFillLocator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
-            }
-            await locator.PressAsync("Enter");
-        }
+        
         
         public async Task SetRouteLocationsAndSearchAsync(string startLocationName, string [] arrStopLocations = null!)
         {
@@ -115,25 +89,23 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 
             await OpenDirectionsAsync();
             // Fill in starting point and destination
-            await SetTextValueAndEnterOnLocator(StartingPoint, startLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
+            await StartingPoint.SetTextValueAndEnterOnLocator(startLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
             
             for(int i = 0; i < arrStopLocations.Length; i++)
             {
                 if(i > 0)
                 {
-                    await ClickOnLocator(_page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']"));
+                    await _page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']").SafeClickAsync();
                 }
                 var stopLocationName = arrStopLocations[i];
                 var stopPoint = _page.Locator("//input[@placeholder='Choose destination, or click on the map...']");                
-                await SetTextValueAndEnterOnLocator(stopPoint, stopLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
+                await stopPoint.SetTextValueAndEnterOnLocator(stopLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
             }
         }
 
         public async Task SelectFirstResultAsync()
         {
-            // Wait for the result list to populate
-            await FirstResult.WaitForAsync(new() { State = WaitForSelectorState.Visible });
-            await FirstResult.ClickAsync();
+            await FirstResult.SafeClickAsync();
         }
 
         public async Task<string> GetHeadlineAsync()

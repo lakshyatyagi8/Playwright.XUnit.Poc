@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Playwright;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
-using PlaywrightAutomationPoc.GoogleMaps.Pages;
 
 namespace PlaywrightAutomationPoc.AutoFramework
 {
