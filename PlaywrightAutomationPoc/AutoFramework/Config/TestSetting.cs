@@ -20,7 +20,7 @@ namespace PlaywrightAutomationPoc.Config
     public class TestSetting : ITestSetting
     {
         [JsonPropertyName("baseURL")]
-        public string BaseUrl { get; set; } = "https://playwright.dev";
+        public string BaseUrl { get; set; } = "https://maps.google.com";
 
         [JsonPropertyName("defaultTimeout")]
         public int DefaultTimeout { get; set; } = 10000;
