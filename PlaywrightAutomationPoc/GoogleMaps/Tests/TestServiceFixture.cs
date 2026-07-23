@@ -45,7 +45,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
             ServiceProvider = services.BuildServiceProvider();
 
             PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();
-            
+
             // Create a lazy instance of MapsPage that will be initialized after PlaywrightDriver.InitializeAsync()
             MapsPageTask = new Lazy<Task<IMapsPage>>(() => 
             {
@@ -57,8 +57,6 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
         public async Task InitializeAsync()
         {
             await PlaywrightDriver.InitializeAsync();
-            // Initialize MapsPage after the driver is ready            
-            MapsPage = await MapsPageTask.Value; 
         }
 
         public async Task DisposeAsync()

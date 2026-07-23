@@ -19,7 +19,8 @@ public class MapsTests : IClassFixture<TestServiceFixture>
     {
         _testSetting = fixture.ServiceProvider.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
-        _mapsPage = fixture.MapsPage;
+        // Resolve the page from the scoped DI container
+        _mapsPage = fixture.MapsPageTask.Value.Result;
         _playwrightDriver.Page.Context.Tracing.StartAsync(new()
         {
             Title = $"{WithTestNameAttribute.CurrentClassName}.{WithTestNameAttribute.CurrentTestName}",
