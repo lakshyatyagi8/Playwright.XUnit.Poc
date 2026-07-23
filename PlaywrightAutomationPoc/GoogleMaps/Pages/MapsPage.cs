@@ -11,19 +11,18 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         private readonly IPage _page;
 
         // Locators are defined as properties (Encapsulation)
-        // Note: Google Maps selectors are complex; generic IDs used here for stability
-        private ILocator SearchBox => _page.Locator("#searchboxinput");
+        private ILocator SearchBox => _page.Locator("input[name='q']");
         
-        private ILocator Directions => _page.Locator("//button[@id='hArJGc']");
+        private ILocator Directions => _page.GetByRole(AriaRole.Button, new() { Name = "Directions" });
 
         private ILocator StartingPoint => _page.GetByPlaceholder("Choose starting point, or click on the map...");
         private ILocator AddDestination => _page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']");
 
-        private ILocator SearchButton => _page.Locator("#searchbox-searchbutton");
+        private ILocator SearchButton => _page.GetByRole(AriaRole.Button, new() { Name = "Search" });
         // Selects the first result that looks like a location link
         private ILocator FirstResult => _page.Locator("a[href*='/place/']").First; 
         private ILocator CookieButton => _page.GetByRole(AriaRole.Button, new() { Name = "Accept all" });
-        private ILocator Headline => _page.Locator("h1.DUwDvf"); // The large text on the destination card
+        private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;
         private ILocator SearchStopOption => _page.Locator("//div[@class='KG8wXc fontBodyMedium']");
         private ILocator RouteOption1Time => _page.Locator("//div[@id='section-directions-trip-0']//div[contains(@class,'Fk3sm fontHeadlineSmall')]");
 
@@ -108,10 +107,10 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
             await FirstResult.SafeClickAsync();
         }
 
-        public async Task<string> GetHeadlineAsync()
+        public async Task<string> GetHeadlineAsync(string sDestination)
         {
-            await Headline.WaitForAsync();
-            return await Headline.InnerTextAsync();
+            await Headline(sDestination).WaitForAsync();
+            return await Headline(sDestination).InnerTextAsync();
         }
         
         public async Task<string> GetRouteOptionTimeAsync()

@@ -12,7 +12,6 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
     public class BrowserConfiguration : IBrowserConfiguration
     {
         private readonly ITestSetting _testSetting;
-        public enum BrowserType;
 
         public BrowserConfiguration(ITestSetting testSetting)
         {

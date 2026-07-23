@@ -20,12 +20,20 @@ public class MapsTests : IClassFixture<TestServiceFixture>
         _testSetting = fixture.Services.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
         _mapsPage = fixture.MapsPage;
+        _playwrightDriver.Page.Context.Tracing.StartAsync(new()
+        {
+            Title = $"{WithTestNameAttribute.CurrentClassName}.{WithTestNameAttribute.CurrentTestName}",
+            Screenshots = true,
+            Snapshots = true,
+            Sources = true 
+        });
     }
 
-    [Theory]
+    [Theory(DisplayName = "SearchSpecificLocation")]
     [InlineData("Esker Educate Together National School")]
     public async Task SearchSpecificLocation(string input)
     {
+        
         if(_mapsPage == null)
             throw new InvalidOperationException("MapsPage is not initialized.");
         // PlaywrightDriver is initialized by the fixture
@@ -33,7 +41,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>
         await _mapsPage.HandleCookiesAsync();
         await _mapsPage.SearchLocationAsync(input);
 
-        var headline = await _mapsPage.GetHeadlineAsync();
+        var headline = await _mapsPage.GetHeadlineAsync(input);
 
         Assert.Contains(input, headline, StringComparison.OrdinalIgnoreCase);
     }
