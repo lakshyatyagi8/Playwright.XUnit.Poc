@@ -5,6 +5,7 @@ using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
 using Xunit;
+using PlaywrightAutomationPoc.AutoFramework.Extensions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 {
@@ -19,7 +20,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
     {
         private const string EnvName = "Dev";
 
-        public IServiceProvider Services { get; }
+        public IServiceProvider ServiceProvider { get; }
         public IPlaywrightDriver PlaywrightDriver { get; }
         public Lazy<Task<IMapsPage>> MapsPageTask { get; private set; }
         public IMapsPage? MapsPage { get; private set; }
@@ -27,9 +28,12 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
         public TestServiceFixture()
         {
             var services = new ServiceCollection();
+            // ✅ The crucial step: invoke your extension methods here
+            services.AddCoreFramework();
+            services.AddGoogleMapsPages();
 
-            // Register framework browser services (BrowserProvider, PageFactory)
-            services.AddBrowserServices();
+            // Build the provider AFTER registering the services
+            ServiceProvider = services.BuildServiceProvider();
 
             // Register test settings created from the environment config file
             var testSetting = new TestSettingInitializer().GetTestSettingByConfigFile(EnvName);
@@ -38,9 +42,9 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
             // Register the PlaywrightDriver which depends on ITestSetting, IBrowserProvider, IPageFactory
             services.AddSingleton<IPlaywrightDriver, PlaywrightDriver>();
 
-            Services = services.BuildServiceProvider();
+            ServiceProvider = services.BuildServiceProvider();
 
-            PlaywrightDriver = Services.GetRequiredService<IPlaywrightDriver>();
+            PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();
             
             // Create a lazy instance of MapsPage that will be initialized after PlaywrightDriver.InitializeAsync()
             MapsPageTask = new Lazy<Task<IMapsPage>>(() => 
@@ -59,12 +63,12 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 
         public async Task DisposeAsync()
         {
-            if (PlaywrightDriver is IAsyncDisposable asyncDisp)
+            if (ServiceProvider is IAsyncDisposable asyncDisp)
             {
                 await asyncDisp.DisposeAsync();
             }
 
-            if (Services is IDisposable disp)
+            if (ServiceProvider is IDisposable disp)
             {
                 disp.Dispose();
             }

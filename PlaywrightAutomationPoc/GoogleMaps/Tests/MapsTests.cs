@@ -17,7 +17,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>
     /// Initializes a new instance of the <see cref="MapsTests"/> class.
     public MapsTests(TestServiceFixture fixture)
     {
-        _testSetting = fixture.Services.GetRequiredService<ITestSetting>();
+        _testSetting = fixture.ServiceProvider.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
         _mapsPage = fixture.MapsPage;
         _playwrightDriver.Page.Context.Tracing.StartAsync(new()
