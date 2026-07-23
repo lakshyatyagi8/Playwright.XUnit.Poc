@@ -1,0 +1,11 @@
+{
+  "csharp.semanticHighlighting.enabled": true,
+  "dotnet.server.useOmnisharp": false,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.vs": true,
+    "**/bin": true,
+    "**/obj": true
+  },
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true
+}

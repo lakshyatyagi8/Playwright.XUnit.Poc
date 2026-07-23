@@ -73,6 +73,14 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
             _browser = await InitializePlaywrightBrowserAsync();
             _pageFactory = await _pageFactoryTask.Value;
             _page = await _pageFactory.CreatePageAsync(_browser, _config.GetBrowserNewPageOptions());
+            
+            // await _page.Context.Tracing.StartAsync(new TracingStartOptions
+            // {
+            //     Title = $"{WithTestNameAttribute.CurrentClassName}.{WithTestNameAttribute.CurrentTestName}",
+            //     Screenshots = true,
+            //     Snapshots = true,
+            //     Sources = true
+            // });
         }
 
         private async Task<IBrowser> InitializePlaywrightBrowserAsync()
@@ -93,6 +101,17 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
 
         public async ValueTask DisposeAsync()
         {
+            if (_page != null)
+            {
+                await _page.Context.Tracing.StopAsync(new()
+                {
+                    Path = Path.Combine(
+                        Environment.CurrentDirectory,
+                        "playwright-traces",
+                    $"{WithTestNameAttribute.CurrentClassName}.{WithTestNameAttribute.CurrentTestName}.zip"
+                    )
+                });
+            }
             if (_browser != null)
             {
                 await _browser.CloseAsync();

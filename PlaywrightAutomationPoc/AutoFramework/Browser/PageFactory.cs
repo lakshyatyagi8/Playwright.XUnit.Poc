@@ -11,13 +11,13 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
     {
         public async Task<IPage> CreatePageAsync(IBrowser browser, BrowserNewPageOptions newPageOptions)
         {
-            return await browser.NewPageAsync(
-                new BrowserNewPageOptions
-                {
-                    ViewportSize = newPageOptions.ViewportSize,
-                    BaseURL = newPageOptions.BaseURL
-                }
-            );
+            var context = await browser.NewContextAsync(new BrowserNewContextOptions
+            {
+                ViewportSize = newPageOptions.ViewportSize,
+                BaseURL = newPageOptions.BaseURL
+            });
+
+            return await context.NewPageAsync();
         }
     }
 }
