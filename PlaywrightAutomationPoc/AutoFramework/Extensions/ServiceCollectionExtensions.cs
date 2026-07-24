@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
+using Microsoft.Playwright;
 
 public static class ServiceCollectionExtensions
 {
@@ -10,8 +11,15 @@ public static class ServiceCollectionExtensions
         // Register core drivers and configuration
         services.AddSingleton<ITestSetting, TestSetting>();
         services.AddScoped<IBrowserProvider, BrowserProvider>();
-        services.AddScoped<PlaywrightDriver>();
+        services.AddScoped<IPlaywrightDriver, PlaywrightDriver>();
+        // ✅ Add this line to register the missing IPageFactory dependency
         services.AddScoped<IPageFactory, PageFactory>();
+        // ✅ Add this line to dynamically resolve IPage for any Page Object
+        services.AddScoped<IPage>(serviceProvider => 
+        {
+            var driver = serviceProvider.GetRequiredService<IPlaywrightDriver>();
+            return driver.Page; 
+        });
         return services;
     }
 

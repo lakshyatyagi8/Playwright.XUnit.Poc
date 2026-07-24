@@ -1,74 +1,68 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Playwright;
-using PlaywrightAutomationPoc.AutoFramework;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
-using Xunit;
-using PlaywrightAutomationPoc.AutoFramework.Extensions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 {
     public interface ITestServiceFixture : IAsyncLifetime
     {
-        IServiceProvider Services { get; }
+        IServiceProvider ServiceProvider { get; }
         IPlaywrightDriver PlaywrightDriver { get; }
-        IMapsPage MapsPage { get; }
+        IMapsPage? MapsPage { get; }
     }
 
-    public class TestServiceFixture : IAsyncLifetime
+    /// <summary>
+    /// A fixture class that sets up the test services and dependencies for Google Maps tests.
+    /// It initializes the Playwright driver, configures the service provider, and provides access to the necessary services for testing.
+    /// </summary>
+    public class TestServiceFixture : ITestServiceFixture
     {
         private const string EnvName = "Dev";
 
         public IServiceProvider ServiceProvider { get; }
         public IPlaywrightDriver PlaywrightDriver { get; }
-        public Lazy<Task<IMapsPage>> MapsPageTask { get; private set; }
-        public IMapsPage? MapsPage { get; private set; }
+        public IMapsPage MapsPage { get; private set; } = null!;
 
         public TestServiceFixture()
         {
             var services = new ServiceCollection();
-            // ✅ The crucial step: invoke your extension methods here
-            services.AddCoreFramework();
-            services.AddGoogleMapsPages();
 
-            // Build the provider AFTER registering the services
-            ServiceProvider = services.BuildServiceProvider();
-
-            // Register test settings created from the environment config file
+            // 1. Setup Configuration
             var testSetting = new TestSettingInitializer().GetTestSettingByConfigFile(EnvName);
             services.AddSingleton<ITestSetting>(testSetting);
 
-            // Register the PlaywrightDriver which depends on ITestSetting, IBrowserProvider, IPageFactory
-            services.AddSingleton<IPlaywrightDriver, PlaywrightDriver>();
+            // 2. Invoke framework extension methods
+            services.AddCoreFramework();
+            services.AddGoogleMapsPages();
 
+            // 3. Build the provider EXACTLY ONCE
             ServiceProvider = services.BuildServiceProvider();
 
-            PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();
-
-            // Create a lazy instance of MapsPage that will be initialized after PlaywrightDriver.InitializeAsync()
-            MapsPageTask = new Lazy<Task<IMapsPage>>(() => 
-            {
-                // The synchronous result is wrapped in a Task<IMapsPage> by the Lazy class.
-                return Task.FromResult<IMapsPage>(new MapsPage(PlaywrightDriver.Page));
-            });
+            // 4. Resolve the driver (DI handles the injection of IBrowserProvider & IPageFactory)
+            PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();            
         }
 
         public async Task InitializeAsync()
         {
+            // Initialize the browser context asynchronously
             await PlaywrightDriver.InitializeAsync();
+            await PlaywrightDriver.Page.Context.Tracing.StartAsync(new()
+            {
+                Screenshots = true,
+                Snapshots = true,
+                Sources = true
+            });
+            // Resolve the page natively from the DI container instead of using 'new'
+            MapsPage = ServiceProvider.GetRequiredService<IMapsPage>();
         }
 
         public async Task DisposeAsync()
         {
-            if (ServiceProvider is IAsyncDisposable asyncDisp)
+            // Cast to ServiceProvider for a clean, single asynchronous disposal
+            if (ServiceProvider is ServiceProvider sp)
             {
-                await asyncDisp.DisposeAsync();
-            }
-
-            if (ServiceProvider is IDisposable disp)
-            {
-                disp.Dispose();
+                await sp.DisposeAsync();
             }
         }
     }
