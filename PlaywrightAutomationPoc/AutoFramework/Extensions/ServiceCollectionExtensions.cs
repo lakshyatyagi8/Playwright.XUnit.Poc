@@ -10,7 +10,7 @@ public static class ServiceCollectionExtensions
     {
         // Register core drivers and configuration
         services.AddSingleton<ITestSetting, TestSetting>();
-        services.AddScoped<IBrowserProvider, BrowserProvider>();
+        services.AddScoped<IBrowserFactory, BrowserFactory>();
         services.AddScoped<IPlaywrightDriver, PlaywrightDriver>();
         // ✅ Add this line to register the missing IPageFactory dependency
         services.AddScoped<IPageFactory, PageFactory>();

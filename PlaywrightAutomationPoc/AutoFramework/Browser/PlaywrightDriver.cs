@@ -12,11 +12,11 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
     public class PlaywrightDriver : IPlaywrightDriver
     {
         /// <summary>
-        /// The browser provider used to launch different browsers.
+        /// The browser factory used to launch different browsers.
         /// </summary>
-        private readonly Lazy<Task<IBrowserProvider>> _browserProviderTask;
+        private readonly Lazy<Task<IBrowserFactory>> _browserFactoryTask;
         // 2. A private field to cache the fully initialized result
-        private IBrowserProvider? _browserProvider;
+        private IBrowserFactory? _browserFactory;
         /// <summary>
         /// The page factory used to create Playwright pages.
         /// </summary>
@@ -47,12 +47,12 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
         /// Initializes a new instance of the <see cref="PlaywrightDriver"/> class.
         /// </summary>
         /// <param name="testSetting"></param>
-        /// <param name="browserProvider"></param>
+        /// <param name="browserFactory"></param>
         /// <param name="pageFactory"></param>
         /// <exception cref="ArgumentNullException"></exception> <summary>
-        public PlaywrightDriver(ITestSetting testSettingTask, IBrowserProvider browserProviderTask, IPageFactory pageFactoryTask)
+        public PlaywrightDriver(ITestSetting testSettingTask, IBrowserFactory browserFactoryTask, IPageFactory pageFactoryTask)
         {
-            _browserProviderTask = new Lazy<Task<IBrowserProvider>>(() => Task.FromResult(browserProviderTask)) ?? throw new ArgumentNullException(nameof(browserProviderTask));
+            _browserFactoryTask = new Lazy<Task<IBrowserFactory>>(() => Task.FromResult(browserFactoryTask)) ?? throw new ArgumentNullException(nameof(browserFactoryTask));
             _pageFactoryTask = new Lazy<Task<IPageFactory>>(() => Task.FromResult(pageFactoryTask)) ?? throw new ArgumentNullException(nameof(pageFactoryTask));
             _testSettingTask = new Lazy<Task<ITestSetting>>(() => Task.FromResult(testSettingTask)) ?? throw new ArgumentNullException(nameof(testSettingTask));
             _testSetting = _testSettingTask.Value.Result;
@@ -72,24 +72,29 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
         {
             _browser = await InitializePlaywrightBrowserAsync();
             _pageFactory = await _pageFactoryTask.Value;
-            _page = await _pageFactory.CreatePageAsync(_browser, _config.GetBrowserNewPageOptions());
-            
+            _page = await _pageFactory.CreatePageAsync(_browser, _config.GetBrowserNewPageOptions());            
         }
 
         private async Task<IBrowser> InitializePlaywrightBrowserAsync()
         {
-            _browserProvider = await _browserProviderTask.Value;
+            _browserFactory = await _browserFactoryTask.Value;
             if (_testSetting == null)
                 throw new InvalidOperationException("Test settings not initialized.");
-            return _testSetting.BrowserType.Trim().ToLower() switch
+
+            var browserType = ParseBrowserType(_testSetting.BrowserType);
+            return await _browserFactory.LaunchAsync(browserType, _config.GetBrowserLaunchOptions());
+        }
+
+        private static BrowserType ParseBrowserType(string browserType)
+        {
+            if (string.IsNullOrWhiteSpace(browserType))
             {
-                "chromium" => await _browserProvider.LaunchChromiumBrowserAsync(_config.GetBrowserLaunchOptions()),
-                "chrome" => await _browserProvider.LaunchChromeBrowserAsync(_config.GetBrowserLaunchOptions()),
-                "firefox" => await _browserProvider.LaunchFirefoxBrowserAsync(_config.GetBrowserLaunchOptions()),
-                "webkit" => await _browserProvider.LaunchWebkitBrowserAsync(_config.GetBrowserLaunchOptions()),
-                "msedge" => await _browserProvider.LaunchEdgeBrowserAsync(_config.GetBrowserLaunchOptions()),
-                _ => throw new ArgumentException($"Unsupported browser channel: {_testSetting.BrowserType}"),
-            };
+                throw new ArgumentException("Browser type cannot be empty.", nameof(browserType));
+            }
+
+            return Enum.TryParse<BrowserType>(browserType, true, out var parsedBrowserType)
+                ? parsedBrowserType
+                : throw new ArgumentException($"Unsupported browser channel: {browserType}", nameof(browserType));
         }
 
         public async ValueTask DisposeAsync()

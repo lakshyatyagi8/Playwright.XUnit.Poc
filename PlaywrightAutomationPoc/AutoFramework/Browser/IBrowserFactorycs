@@ -1,0 +1,9 @@
+using Microsoft.Playwright;
+
+namespace PlaywrightAutomationPoc.AutoFramework.Browser
+{
+    public interface IBrowserFactory
+    {
+        Task<IBrowser> LaunchAsync(BrowserType browserType, BrowserTypeLaunchOptions options);
+    }
+}
