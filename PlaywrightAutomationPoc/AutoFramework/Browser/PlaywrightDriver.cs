@@ -1,4 +1,6 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
+using BrowserKind = PlaywrightAutomationPoc.AutoFramework.Enum.BrowserType;
 using PlaywrightAutomationPoc.Config;
 
 namespace PlaywrightAutomationPoc.AutoFramework.Browser
@@ -85,14 +87,14 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
             return await _browserFactory.LaunchAsync(browserType, _config.GetBrowserLaunchOptions());
         }
 
-        private static BrowserType ParseBrowserType(string browserType)
+        private static BrowserKind ParseBrowserType(string browserType)
         {
             if (string.IsNullOrWhiteSpace(browserType))
             {
                 throw new ArgumentException("Browser type cannot be empty.", nameof(browserType));
             }
 
-            return Enum.TryParse<BrowserType>(browserType, true, out var parsedBrowserType)
+            return Enum.TryParse<BrowserKind>(browserType, true, out var parsedBrowserType)
                 ? parsedBrowserType
                 : throw new ArgumentException($"Unsupported browser channel: {browserType}", nameof(browserType));
         }

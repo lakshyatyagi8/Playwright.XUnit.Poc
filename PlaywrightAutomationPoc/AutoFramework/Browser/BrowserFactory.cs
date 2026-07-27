@@ -1,10 +1,12 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
+using BrowserKind = PlaywrightAutomationPoc.AutoFramework.Enum.BrowserType;
 
 namespace PlaywrightAutomationPoc.AutoFramework.Browser
 {
     public class BrowserFactory : IBrowserFactory
     {
-        public async Task<IBrowser> LaunchAsync(BrowserType browserType, BrowserTypeLaunchOptions options)
+        public async Task<IBrowser> LaunchAsync(BrowserKind browserType, BrowserTypeLaunchOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
 
@@ -13,23 +15,23 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
             return await playwright[GetBrowserName(browserType)].LaunchAsync(options);
         }
 
-        public static string GetBrowserName(BrowserType browserType) => browserType switch
+        public static string GetBrowserName(BrowserKind browserType) => browserType switch
         {
-            BrowserType.Chromium => "chromium",
-            BrowserType.Firefox => "firefox",
-            BrowserType.Webkit => "webkit",
-            BrowserType.Chrome => "chromium",
-            BrowserType.MsEdge => "chromium",
+            BrowserKind.Chromium => "chromium",
+            BrowserKind.Firefox => "firefox",
+            BrowserKind.Webkit => "webkit",
+            BrowserKind.Chrome => "chromium",
+            BrowserKind.MsEdge => "chromium",
             _ => throw new ArgumentOutOfRangeException(nameof(browserType), browserType, "Unsupported browser type")
         };
 
-        public static string GetChannelName(BrowserType browserType) => browserType switch
+        public static string GetChannelName(BrowserKind browserType) => browserType switch
         {
-            BrowserType.Chromium => "chromium",
-            BrowserType.Firefox => "firefox",
-            BrowserType.Webkit => string.Empty,
-            BrowserType.Chrome => "chrome",
-            BrowserType.MsEdge => "msedge",
+            BrowserKind.Chromium => "chromium",
+            BrowserKind.Firefox => "firefox",
+            BrowserKind.Webkit => string.Empty,
+            BrowserKind.Chrome => "chrome",
+            BrowserKind.MsEdge => "msedge",
             _ => throw new ArgumentOutOfRangeException(nameof(browserType), browserType, "Unsupported browser type")
         };
     }

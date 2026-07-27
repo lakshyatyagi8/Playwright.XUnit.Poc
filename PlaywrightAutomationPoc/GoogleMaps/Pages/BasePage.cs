@@ -1,3 +1,5 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
+
 using Microsoft.Playwright;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages

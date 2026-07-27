@@ -1,3 +1,4 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using System.Text.Json;
 
 namespace PlaywrightAutomationPoc.Config

@@ -1,7 +1,7 @@
 using Microsoft.Playwright;
 
 namespace PlaywrightAutomationPoc.AutoFramework.Extensions
-{ 
+{
     public static class LocatorExtension
     {
         /// <summary>

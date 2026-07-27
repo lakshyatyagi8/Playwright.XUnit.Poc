@@ -1,3 +1,4 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
 using PlaywrightAutomationPoc.Config;
 
@@ -41,14 +42,5 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
                 BaseURL = _testSetting?.BaseUrl
             };
         }
-    }
-    
-    public enum BrowserType
-    {
-        Chromium,
-        Firefox,
-        Webkit,
-        Chrome,
-        MsEdge
-    }
+    }    
 }

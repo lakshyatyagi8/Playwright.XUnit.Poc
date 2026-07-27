@@ -1,9 +1,10 @@
+// Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
 using PlaywrightAutomationPoc.AutoFramework.Extensions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
-    public class MapsPage : BasePage
+    public class MapsPage : BasePage, IMapsPage
     {
         private ILocator Directions => _page.GetByRole(AriaRole.Button, new() { Name = "Directions" });
 
@@ -29,6 +30,16 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         {
             await SearchBox.FillAsync(locationName);
             await SearchButton.ClickAsync();
+        }
+
+        public new async Task NavigateAsync(string baseUrl)
+        {
+            await base.NavigateAsync(baseUrl);
+        }
+
+        public new async Task HandleCookiesAsync()
+        {
+            await base.HandleCookiesAsync();
         }
 
         /// <summary>
