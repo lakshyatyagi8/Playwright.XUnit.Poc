@@ -4,7 +4,7 @@ using PlaywrightAutomationPoc.AutoFramework.Extensions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
-    public class MapsPage : BasePage, IMapsPage
+    public class MapsPage : BasePage
     {
         private ILocator Directions => _page.GetByRole(AriaRole.Button, new() { Name = "Directions" });
 

@@ -10,7 +10,6 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
     {
         IServiceProvider ServiceProvider { get; }
         IPlaywrightDriver PlaywrightDriver { get; }
-        IMapsPage? MapsPage { get; }
     }
 
     /// <summary>
@@ -23,7 +22,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 
         public IServiceProvider ServiceProvider { get; }
         public IPlaywrightDriver PlaywrightDriver { get; }
-        public IMapsPage MapsPage { get; private set; } = null!;
+        public MapsPage MapsPage { get; private set; } = null!;
 
         public TestServiceFixture()
         {
@@ -55,7 +54,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
                 Sources = true
             });
             // Resolve the page natively from the DI container instead of using 'new'
-            MapsPage = ServiceProvider.GetRequiredService<IMapsPage>();
+            MapsPage = ServiceProvider.GetRequiredService<MapsPage>();
         }
 
         public async Task DisposeAsync()

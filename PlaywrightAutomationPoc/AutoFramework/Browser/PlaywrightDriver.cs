@@ -94,7 +94,7 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
                 throw new ArgumentException("Browser type cannot be empty.", nameof(browserType));
             }
 
-            return Enum.TryParse<BrowserKind>(browserType, true, out var parsedBrowserType)
+            return System.Enum.TryParse<BrowserKind>(browserType, true, out var parsedBrowserType)
                 ? parsedBrowserType
                 : throw new ArgumentException($"Unsupported browser channel: {browserType}", nameof(browserType));
         }

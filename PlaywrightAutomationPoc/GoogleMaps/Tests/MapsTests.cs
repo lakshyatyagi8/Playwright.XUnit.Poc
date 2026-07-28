@@ -2,9 +2,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.Config;
-using PlaywrightAutomationPoc.GoogleMaps.Pages;
 using PlaywrightAutomationPoc.AutoFramework;
 using Xunit.Abstractions;
+using Microsoft.Playwright;
+using PlaywrightAutomationPoc.GoogleMaps.Pages;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Tests;
 
@@ -15,7 +16,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
 {
     private readonly ITestSetting _testSetting;
     private readonly IPlaywrightDriver _playwrightDriver;
-    private readonly IMapsPage _mapsPage;
+    private readonly MapsPage _mapsPage;
     private readonly string _testName;
     private readonly string _className;
 
@@ -27,7 +28,8 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         // ✅ No null-coalescing needed; Fixture initialized this before hitting this constructor
         _mapsPage = fixture.MapsPage; 
         // Use reflection on ITestOutputHelper to get the current test context safely
-        var (_className, _testName) = XunitContextHelper.GetTestContext(output);
+        // No var keyword needed; assign directly to the class fields
+        (_className, _testName) = XunitContextHelper.GetTestContext(output);
     }
 
     // ✅ Safely handle async pre-test operations here

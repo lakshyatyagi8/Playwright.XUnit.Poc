@@ -27,7 +27,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddGoogleMapsPages(this IServiceCollection services)
     {
         // Register feature-specific page objects
-        services.AddTransient<IMapsPage, MapsPage>();
+        services.AddTransient<MapsPage>();
         return services;
     }
 }
