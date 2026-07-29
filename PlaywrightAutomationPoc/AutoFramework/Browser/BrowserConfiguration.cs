@@ -25,8 +25,7 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
             {
                 SlowMo = _testSetting?.SlowMo ?? 0,
                 Headless = _testSetting?.Headless ?? true,
-                Channel = _testSetting?.BrowserType,
-                //Devtools = _testSetting?.Devtools ?? false
+                Channel = _testSetting?.BrowserType
             };
         }
 

@@ -5,12 +5,6 @@ using PlaywrightAutomationPoc.Config;
 
 namespace PlaywrightAutomationPoc.AutoFramework.Browser
 {
-    public interface IPlaywrightDriver : IAsyncDisposable
-    {
-        IPage Page { get; }
-        Task InitializeAsync();
-    }
-
     public class PlaywrightDriver : IPlaywrightDriver
     {
         /// <summary>
@@ -48,9 +42,9 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
         /// <summary>
         /// Initializes a new instance of the <see cref="PlaywrightDriver"/> class.
         /// </summary>
-        /// <param name="testSetting"></param>
-        /// <param name="browserFactory"></param>
-        /// <param name="pageFactory"></param>
+        /// <param name="testSetting">Test settings containing browser type and other configurations.</param>
+        /// <param name="browserFactory">Factory for launching different browsers.</param>
+        /// <param name="pageFactory">Factory for creating Playwright pages.</param>
         /// <exception cref="ArgumentNullException"></exception> <summary>
         public PlaywrightDriver(ITestSetting testSettingTask, IBrowserFactory browserFactoryTask, IPageFactory pageFactoryTask)
         {
