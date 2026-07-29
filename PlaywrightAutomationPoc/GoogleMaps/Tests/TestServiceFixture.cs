@@ -1,6 +1,7 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Extensions.DependencyInjection;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
+using PlaywrightAutomationPoc.AutoFramework.Reporting;
 using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
 
@@ -21,7 +22,9 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
         private const string EnvName = "Dev";
 
         public IServiceProvider ServiceProvider { get; }
-        public IPlaywrightDriver PlaywrightDriver { get; }
+        public IPlaywrightDriver PlaywrightDriver { get; }        
+        public IReportGenerator Reporter { get; }
+        
         public MapsPage MapsPage { get; private set; } = null!;
 
         public TestServiceFixture()
@@ -30,7 +33,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 
             // 1. Setup Configuration
             var testSetting = new TestSettingInitializer().GetTestSettingByConfigFile(EnvName);
-            services.AddSingleton<ITestSetting>(testSetting);
+            services.AddSingleton<ITestSetting>(testSetting);            
 
             // 2. Invoke framework extension methods
             services.AddCoreFramework();
@@ -40,7 +43,13 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
             ServiceProvider = services.BuildServiceProvider();
 
             // 4. Resolve the driver (DI handles the injection of IBrowserProvider & IPageFactory)
-            PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();            
+            PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();
+            
+            Reporter = ServiceProvider.GetRequiredService<IReportGenerator>(); // Resolve Reporter
+            // Initialize report once per test run
+            var reportPath = Path.Combine(AppContext.BaseDirectory, "Reports", "test-report.html");
+            Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+            Reporter.InitializeReport(reportPath);
         }
 
         public async Task InitializeAsync()
@@ -59,6 +68,8 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
 
         public async Task DisposeAsync()
         {
+            // Flush the report to save the HTML file
+            Reporter.Flush();
             // Cast to ServiceProvider for a clean, single asynchronous disposal
             if (ServiceProvider is ServiceProvider sp)
             {

@@ -1,10 +1,8 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Extensions.DependencyInjection;
-using PlaywrightAutomationPoc.AutoFramework.Browser;
-using PlaywrightAutomationPoc.Config;
-using PlaywrightAutomationPoc.AutoFramework;
+using PlaywrightAutomationPoc.AutoFramework.Browser;using PlaywrightAutomationPoc.AutoFramework.Reporting;using PlaywrightAutomationPoc.Config;
+using PlaywrightAutomationPoc.AutoFramework.Extensions;
 using Xunit.Abstractions;
-using Microsoft.Playwright;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Tests;
@@ -16,6 +14,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
 {
     private readonly ITestSetting _testSetting;
     private readonly IPlaywrightDriver _playwrightDriver;
+    private readonly IReportGenerator _reporter;
     private readonly MapsPage _mapsPage;
     private readonly string _testName;
     private readonly string _className;
@@ -24,12 +23,16 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     {
         _testSetting = fixture.ServiceProvider.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
+        _reporter = fixture.Reporter;
         
         // ✅ No null-coalescing needed; Fixture initialized this before hitting this constructor
         _mapsPage = fixture.MapsPage; 
         // Use reflection on ITestOutputHelper to get the current test context safely
         // No var keyword needed; assign directly to the class fields
         (_className, _testName) = XunitContextHelper.GetTestContext(output);
+        // Initialize report once per test run
+        _reporter.CreateTest($"{_className}.{_testName}");
+        _reporter.LogInfo($"Starting test {_className}.{_testName}.");
     }
 
     // ✅ Safely handle async pre-test operations here
