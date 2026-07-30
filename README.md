@@ -1,28 +1,37 @@
-Playwright xUnit Automation Framework
-This repository is a modular, scalable Test Automation Framework built with C# .NET, Playwright, xUnit, and Microsoft.Extensions.DependencyInjection. It implements the Page Object Model (POM) and uses a scoped Dependency Injection container to ensure safe parallel execution and test isolation.
+# Playwright xUnit Automation Framework
 
-🏗 Framework Architecture
-AutoFramework: The core engine. Contains browser lifecycle management (BrowserProvider), wrappers (PlaywrightDriver), and configuration binding.  
+This repository contains a modular and scalable test automation framework built with C# .NET, Playwright, xUnit, and Microsoft.Extensions.DependencyInjection. It follows the Page Object Model (POM) and uses a scoped dependency injection container to keep browser state isolated across tests.
 
-Dependency Injection: Services and Page Objects are registered in ServiceCollectionExtensions.cs.  Test Isolation: A new DI scope is created per test via TestServiceFixture.cs. This guarantees each test gets its own isolated browser context.  Environment Config: Settings are driven by JSON files like Environment/Dev.json.
+## Framework highlights
 
-🛠 How to Add a New Page (Page Object Model)
-To keep the framework maintainable, we separate UI interactions from test logic. Follow these steps to add a new page:
-1. Create the Interface: Define the page actions in an interface. Create this in the relevant domain folder (e.g., DomainName/Pages/).C#
-public interface ILoginContextPage 
+- Browser lifecycle and Playwright page management are handled in the AutoFramework layer.
+- Shared page behavior is centralized in BasePage, which provides common actions such as navigation, cookie handling, and reusable locators.
+- Extent Reports are integrated for rich HTML reporting and are written to Reports/test-report.html.
+- Playwright tracing is enabled per test and saved as ZIP files under the Traces folder.
+- Test isolation is enforced through TestServiceFixture and scoped services.
+
+## Architecture overview
+
+- AutoFramework: core engine for browser setup, Playwright driver management, DI registration, and reporting.
+- GoogleMaps: feature-specific pages and test classes for the Google Maps scenario.
+- Environment/Dev.json: environment-specific test settings bound through the TestSetting model.
+
+## Adding a new page
+
+The current implementation uses concrete page classes that inherit from BasePage rather than requiring a separate interface for each page.
+
+1. Create a new page class in the relevant domain folder, such as GoogleMaps/Pages.
+2. Inherit from BasePage and add page-specific locators and actions.
+3. Register the page as a transient service in ServiceCollectionExtensions.
+4. Resolve it from the DI container inside the test class or fixture.
+
+Example:
+
+```csharp
+public class LoginPage : BasePage
 {
-    Task LoginAsync(string username, string password);
-    Task<bool> IsLoggedInAsync();
-}
-2. Create the ImplementationCreate the concrete class implementing the interface. Inject the IPage (or PlaywrightDriver) via the constructor.C#
-public class LoginContextPage : ILoginContextPage
-{
-    private readonly IPage _page;
-
-    // Inject the page provided by the factory or driver
-    public LoginContextPage(IPage page)
+    public LoginPage(IPage page) : base(page)
     {
-        _page = page;
     }
 
     public async Task LoginAsync(string username, string password)
@@ -31,50 +40,32 @@ public class LoginContextPage : ILoginContextPage
         await _page.FillAsync("#password", password);
         await _page.ClickAsync("#login-button");
     }
-
-    public async Task<bool> IsLoggedInAsync()
-    {
-        return await _page.Locator("#dashboard").IsVisibleAsync();
-    }
 }
-3. Register the Page in Dependency InjectionOpen AutoFramework/Extensions/ServiceCollectionExtensions.cs and register your new page in the appropriate domain extension method using AddTransient.  C#public static IServiceCollection AddDomainPages(this IServiceCollection services)
-{
-    services.AddTransient<ILoginContextPage, LoginContextPage>();
-    // Add other pages here
-    return services;
-}
+```
 
-🧪 How to Add New Test 
-CodeTests should only contain test logic, assertions, and calls to injected Page Objects.
-1. Create the Test Class: Create your test inside the relevant domain folder (e.g., DomainName/Tests/). Implement IClassFixture<TestServiceFixture> so xUnit knows to use the DI container.  
-2. Inject Dependencies: Request the required Page Objects through the test class constructor.C#
-using Xunit;
-using PlaywrightAutomationPoc.GoogleMaps.Tests; // Path to TestServiceFixture
+Registration:
 
-public class LoginTests : IClassFixture<TestServiceFixture>
-{
-    private readonly ILoginContextPage _loginPage;
+```csharp
+services.AddTransient<LoginPage>();
+```
 
-    public LoginTests(TestServiceFixture fixture)
-    {
-        // Resolve the page from the scoped DI container
-        _loginPage = fixture.ServiceProvider.GetService<ILoginContextPage>();
-    }
+## Adding a new test
 
-    [Fact]
-    public async Task ValidUser_ShouldLoginSuccessfully()
-    {
-        // Act
-        await _loginPage.LoginAsync("admin", "password123");
-        var isLoggedIn = await _loginPage.IsLoggedInAsync();
+1. Create a test class in the relevant domain folder.
+2. Use TestServiceFixture so the test receives the configured DI container and Playwright driver.
+3. Resolve the needed page objects from the fixture or container.
+4. Keep assertions and workflow steps in the test body, while page-specific UI logic stays in the page object.
 
-        // Assert
-        Assert.True(isLoggedIn);
-    }
-}
+## Reporting and tracing
 
-🚀 Best Practices for Optimal Framework Usage
-1. Respect the DI Scopes: DO NOT use AddSingleton for Pages, Drivers, or Browser Providers. This will cause parallel tests to fight over the same browser window.DO use AddScoped for Core Engine components (PlaywrightDriver, BrowserProvider) so they share the exact same browser context within a single test run.DO use AddTransient for Page Objects.
-2. Never Use Static Drivers: Avoid creating static browser instances or drivers. Because xUnit runs tests in parallel by default, static variables will cause test contamination and flakiness. Always rely on the TestServiceFixture to hand you a safe, isolated instance.
-3. Asynchronous Teardown: If you create custom services that require cleanup (like writing to a file or closing a database connection), ensure they implement IAsyncDisposable. The TestServiceFixture.cs automatically calls DisposeAsync() on the container, ensuring zero memory leaks.
-4. Configuration Management: Do not hardcode URLs or timeouts. Update Environment/Dev.json and bind it to the TestSetting model so it can be injected safely anywhere in the framework.  
+- Extent Reports are initialized once per test run and create a test node for each executed test.
+- The reporter logs informational, pass, and fail events directly into the HTML report.
+- Playwright tracing is started before each test and stopped afterward, producing trace artifacts in the Traces folder.
+
+## Best practices
+
+- Do not use AddSingleton for pages, drivers, or browser providers.
+- Use AddScoped for core engine services that must share a browser context safely.
+- Use AddTransient for page objects so each test gets a clean instance.
+- Keep shared navigation and cookie logic in BasePage instead of duplicating it in each page object.
+- Keep test data in configuration files rather than hardcoding values in tests.

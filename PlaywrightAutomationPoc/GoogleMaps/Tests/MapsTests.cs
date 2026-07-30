@@ -28,7 +28,6 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         // ✅ No null-coalescing needed; Fixture initialized this before hitting this constructor
         _mapsPage = fixture.MapsPage; 
         // Use reflection on ITestOutputHelper to get the current test context safely
-        // No var keyword needed; assign directly to the class fields
         (_className, _testName) = XunitContextHelper.GetTestContext(output);
         // Initialize report once per test run
         _reporter.CreateTest($"{_className}.{_testName}");
@@ -60,30 +59,50 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     [InlineData("Esker Educate Together National School")]
     public async Task SearchSpecificLocation(string input)
     {
-        // ✅ Clean, readable test logic with no null checks
-        await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
-        await _mapsPage.HandleCookiesAsync();
-        await _mapsPage.SearchLocationAsync(input);
+        try
+        {
+            // ✅ Clean, readable test logic with no null checks
+            await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
+            _reporter.LogInfo($"Navigated to {_testSetting.BaseUrl} successfully.");
+            await _mapsPage.HandleCookiesAsync();
+            await _mapsPage.SearchLocationAsync(input);
+            _reporter.LogInfo($"Search Location '{input}' executed successfully.");
 
-        var headline = await _mapsPage.GetHeadlineAsync(input);
+            var headline = await _mapsPage.GetHeadlineAsync(input);
 
-        Assert.Contains(input, headline, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(input, headline, StringComparison.OrdinalIgnoreCase);
+            _reporter.LogPass($"Test {_className}.{_testName} passed.");
+        }
+        catch (Exception ex)
+        {
+            _reporter.LogFail($"Test {_className}.{_testName} failed with exception: {ex.Message}");
+            throw; // Rethrow to ensure the test fails
+        }
     }
     
     [Theory]
     [InlineData("26 Tandy's Pl, Doddsborough", new string[] { "Esker Educate Together National School", "Verizon Connect Ireland" })]
     public async Task SetRouteDirections(string startLocation, string[] stopLocations)
     {
-        if(stopLocations.Length < 1)
-            throw new ArgumentException("At least 1 stop location must be provided.");
-        
-        // ✅ Clean, readable test logic
-        await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
-        await _mapsPage.HandleCookiesAsync();
-        await _mapsPage.SetRouteLocationsAndSearchAsync(startLocation, stopLocations);
-        
-        var routeTime = await _mapsPage.GetRouteOptionTimeAsync();
-        
-        Assert.Contains("min", routeTime, StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            if(stopLocations.Length < 1)
+                throw new ArgumentException("At least 1 stop location must be provided.");
+            
+            // ✅ Clean, readable test logic
+            await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
+            await _mapsPage.HandleCookiesAsync();
+            await _mapsPage.SetRouteLocationsAndSearchAsync(startLocation, stopLocations);
+            
+            var routeTime = await _mapsPage.GetRouteOptionTimeAsync();
+            
+            Assert.Contains("min", routeTime, StringComparison.OrdinalIgnoreCase);
+            _reporter.LogPass($"Test {_className}.{_testName} passed.");
+        }
+        catch (Exception ex)
+        {
+            _reporter.LogFail($"Test {_className}.{_testName} failed with exception: {ex.Message}");
+            throw; // Rethrow to ensure the test fails
+        }
     }
 }

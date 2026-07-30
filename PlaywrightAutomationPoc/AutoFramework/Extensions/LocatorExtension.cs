@@ -9,7 +9,7 @@ namespace PlaywrightAutomationPoc.AutoFramework.Extensions
         /// </summary>
         /// <param name="locator"></param>
         /// <returns></returns>
-        public static async Task SafeClickAsync(this ILocator locator)
+        public static async Task WaitAndClickAsync(this ILocator locator)
         {
             await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000  });
             await locator.ClickAsync();
@@ -21,15 +21,11 @@ namespace PlaywrightAutomationPoc.AutoFramework.Extensions
         /// <param name="locator"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static async Task SetTextValueAndEnterOnLocator(this ILocator locator, string value, ILocator? waitForVisiblePostFillLocator = null)
+        public static async Task SetTextValueAndEnter(this ILocator locator, string value)
         {
-            await locator.WaitForAsync(new() { State = WaitForSelectorState.Visible });
+            await locator.ClickAsync();
             await locator.FillAsync(value);
-            if (waitForVisiblePostFillLocator != null)
-            {
-                await waitForVisiblePostFillLocator.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = 10000 });
-            }
-            await locator.PressAsync("Enter");
+            await locator.Page.Keyboard.PressAsync("Enter");
         }
     }
 }

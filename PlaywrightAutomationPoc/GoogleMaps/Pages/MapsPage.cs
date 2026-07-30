@@ -8,7 +8,10 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
     {
         private ILocator Directions => _page.GetByRole(AriaRole.Button, new() { Name = "Directions" });
 
-        private ILocator StartingPoint => _page.GetByPlaceholder("Choose starting point, or click on the map...");
+        private ILocator StartingPoint => _page.GetByRole(AriaRole.Textbox, new() { Name = "Choose starting point, or" });
+
+        private ILocator AddDestinationPoint => _page.GetByRole(AriaRole.Button, new() { Name = "Add destination" });
+        private ILocator DestinationPoint => _page.GetByRole(AriaRole.Textbox, new() { Name = "Choose destination, or click" });
         // Selects the first result that looks like a location link
         private ILocator FirstResult => _page.Locator("a[href*='/place/']").First; 
         private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;
@@ -41,42 +44,28 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         {
             await base.HandleCookiesAsync();
         }
-
-        /// <summary>
-        /// Opens the directions panel.
-        /// </summary>
-        /// <returns></returns>
-        private async Task OpenDirectionsAsync()
-        {
-            await Directions.WaitForAsync(new LocatorWaitForOptions { Timeout = 10000 });
-            await Directions.ClickAsync();
-        }
-        
         
         public async Task SetRouteLocationsAndSearchAsync(string startLocationName, string [] arrStopLocations = null!)
         {
-            if (arrStopLocations.Length < 1)
+            if (arrStopLocations.Length == 0)
                 throw new ArgumentException("At least one stop locations are required for a route.");
-
-            await OpenDirectionsAsync();
-            // Fill in starting point and destination
-            await StartingPoint.SetTextValueAndEnterOnLocator(startLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
-            
-            for(int i = 0; i < arrStopLocations.Length; i++)
+            await SearchBox.FillAsync(arrStopLocations[0]);
+            await SearchButton.ClickAsync();
+            await Directions.ClickAsync();
+            await StartingPoint.SetTextValueAndEnter(startLocationName);
+            if(arrStopLocations.Length > 1)
             {
-                if(i > 0)
-                {
-                    await _page.Locator("div[class='d2cEI'] span[class='ExQYxb google-symbols']").SafeClickAsync();
+                for(int i = 1; i < arrStopLocations.Length; i++)
+                {                    
+                    await AddDestinationPoint.ClickAsync();
+                    await DestinationPoint.SetTextValueAndEnter(arrStopLocations[i]);
                 }
-                var stopLocationName = arrStopLocations[i];
-                var stopPoint = _page.Locator("//input[@placeholder='Choose destination, or click on the map...']");                
-                await stopPoint.SetTextValueAndEnterOnLocator(stopLocationName, _page.Locator("//div[@class='KG8wXc fontBodyMedium']"));
             }
         }
 
         public async Task SelectFirstResultAsync()
         {
-            await FirstResult.SafeClickAsync();
+            await FirstResult.WaitAndClickAsync();
         }
 
         public async Task<string> GetHeadlineAsync(string sDestination)
