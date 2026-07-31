@@ -1,6 +1,7 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
 using PlaywrightAutomationPoc.AutoFramework.Extensions;
+using PlaywrightAutomationPoc.AutoFramework.Reporter;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
@@ -19,8 +20,8 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         
         // 2. Constructor
         // Passes the IPage instance up to the BasePage
-        public MapsPage(IPage page) : base(page)
-        {
+        public MapsPage(IPage page, IReportGenerator reporter) : base(page, reporter)
+        {            
             
         }
 

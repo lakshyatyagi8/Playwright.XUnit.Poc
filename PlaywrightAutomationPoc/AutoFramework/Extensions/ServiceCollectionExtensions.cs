@@ -1,7 +1,7 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Extensions.DependencyInjection;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
-using PlaywrightAutomationPoc.AutoFramework.Reporting;
+using PlaywrightAutomationPoc.AutoFramework.Reporter;
 using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
 using Microsoft.Playwright;

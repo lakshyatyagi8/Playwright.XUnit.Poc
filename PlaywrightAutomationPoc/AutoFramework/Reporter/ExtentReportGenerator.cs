@@ -2,7 +2,7 @@
 using AventStack.ExtentReports;
 using AventStack.ExtentReports.Reporter;
 
-namespace PlaywrightAutomationPoc.AutoFramework.Reporting
+namespace PlaywrightAutomationPoc.AutoFramework.Reporter
 {
     public class ExtentReportGenerator : IReportGenerator
     {

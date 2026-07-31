@@ -1,9 +1,13 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Extensions.DependencyInjection;
-using PlaywrightAutomationPoc.AutoFramework.Browser;using PlaywrightAutomationPoc.AutoFramework.Reporting;using PlaywrightAutomationPoc.Config;
+using PlaywrightAutomationPoc.AutoFramework.Browser;
+using PlaywrightAutomationPoc.AutoFramework.Reporter;
+using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.AutoFramework.Extensions;
 using Xunit.Abstractions;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
+using System.Text;
+using Microsoft.Playwright;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Tests;
 
@@ -18,6 +22,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     private readonly MapsPage _mapsPage;
     private readonly string _testName;
     private readonly string _className;
+    private StringBuilder _consoleLogs;
 
     public MapsTests(TestServiceFixture fixture, ITestOutputHelper output)
     {
@@ -26,12 +31,19 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         _reporter = fixture.Reporter;
         
         // ✅ No null-coalescing needed; Fixture initialized this before hitting this constructor
-        _mapsPage = fixture.MapsPage; 
+        _mapsPage = fixture.MapsPage; // Access the IPage from the MapsPage instance
         // Use reflection on ITestOutputHelper to get the current test context safely
         (_className, _testName) = XunitContextHelper.GetTestContext(output);
         // Initialize report once per test run
         _reporter.CreateTest($"{_className}.{_testName}");
         _reporter.LogInfo($"Starting test {_className}.{_testName}.");
+        // 4. Set up an in-memory buffer to capture browser logs during this test
+        _consoleLogs = new StringBuilder();
+        /*
+        _mapsPage.Console += (_, msg) =>
+        {
+            _consoleLogs.AppendLine($"[{msg.Type.ToUpper()}] {msg.Text}");
+        };*/
     }
 
     // ✅ Safely handle async pre-test operations here

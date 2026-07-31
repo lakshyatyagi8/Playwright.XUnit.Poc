@@ -1,15 +1,17 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 
 using Microsoft.Playwright;
+using PlaywrightAutomationPoc.AutoFramework.Reporter;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
-    public class BasePage
+    public abstract class BasePage
     {
         /// <summary>
         /// The Playwright page instance used for interacting with the Google Maps web page.
         /// </summary>
-        protected readonly IPage _page;
+        protected readonly IPage _page;        
+        private readonly IReportGenerator _reporter;
 
         // Locators are defined as properties (Encapsulation)
         protected ILocator SearchBox => _page.Locator("input[name='q']");
@@ -18,9 +20,10 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         
         protected ILocator CookieButton => _page.GetByRole(AriaRole.Button, new() { Name = "Accept all" });
 
-        protected BasePage(IPage page)
+        protected BasePage(IPage page, IReportGenerator reporter)
         {
-            _page = page;
+            _page = page ?? throw new ArgumentNullException(nameof(page));
+            _reporter = reporter ?? throw new ArgumentNullException(nameof(reporter));            
         }
 
         /// <summary>
