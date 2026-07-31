@@ -19,7 +19,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     private readonly ITestSetting _testSetting;
     private readonly IPlaywrightDriver _playwrightDriver;
     private readonly IReportGenerator _reporter;
-    private readonly MapsPage _mapsPage;
+    private readonly IMapsPage _mapsPage;
     private readonly string _testName;
     private readonly string _className;
     private StringBuilder _consoleLogs;

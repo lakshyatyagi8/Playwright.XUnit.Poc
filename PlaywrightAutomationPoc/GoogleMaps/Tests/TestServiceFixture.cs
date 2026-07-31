@@ -26,7 +26,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
         public IPlaywrightDriver PlaywrightDriver { get; }        
         public IReportGenerator Reporter { get; }
         
-        public MapsPage MapsPage { get; private set; } = null!;
+        public IMapsPage MapsPage { get; private set; } = null!;
 
         public TestServiceFixture()
         {
@@ -64,7 +64,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
                 Sources = true
             });
             // Resolve the page natively from the DI container instead of using 'new'
-            MapsPage = ServiceProvider.GetRequiredService<MapsPage>();
+            MapsPage = ServiceProvider.GetRequiredService<IMapsPage>();
         }
 
         public async Task DisposeAsync()

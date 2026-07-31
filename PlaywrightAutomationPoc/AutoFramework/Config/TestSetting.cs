@@ -33,10 +33,10 @@ namespace PlaywrightAutomationPoc.Config
         public string BrowserType { get; set; } = "chrome";
 
         [JsonPropertyName("devtools")]
-        public bool Devtools { get; set; } = true;
+                public bool Devtools { get; set; } = false; // Disable devtools by default
 
         [JsonPropertyName("slowMo")]
-        public int SlowMo { get; set; } = 20000;
+                public int SlowMo { get; set; } = 0; // Remove artificial slow-down for normal runs
 
         [JsonPropertyName("viewport")]
         public Viewport Viewport { get; set; } = new Viewport();
