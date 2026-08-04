@@ -33,6 +33,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         _testSetting = fixture.ServiceProvider.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
         _reporter = fixture.Reporter;
+        _mapsPage = fixture.MapsPage;
         
         // Do not bind to a concrete page object here - create or reuse in InitializeAsync based on configuration
         // Use reflection on ITestOutputHelper to get the current test context safely
@@ -126,7 +127,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
             // ✅ Clean, readable test logic with no null checks
             await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
             _reporter.LogInfo($"Navigated to {_testSetting.BaseUrl} successfully.");
-            await _mapsPage.CookieConsent.HandleCookiesAsync();
+            await _mapsPage.HandleCookiesAsync();
             await _mapsPage.SearchLocationAsync(input);
             _reporter.LogInfo($"Search Location '{input}' executed successfully.");
 
