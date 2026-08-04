@@ -57,12 +57,18 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
         {
             // Initialize the browser context asynchronously
             await PlaywrightDriver.InitializeAsync();
-            await PlaywrightDriver.Page.Context.Tracing.StartAsync(new()
+            // Start tracing only if configured. Values: "off", "on", "on-first-retry". "on-first-retry" requires setting PLAYWRIGHT_FORCE_TRACE in the environment to enable tracing for a retry.
+            var traceSetting = ServiceProvider.GetRequiredService<ITestSetting>().Trace?.ToLowerInvariant() ?? "off";
+            var forceTrace = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PLAYWRIGHT_FORCE_TRACE"));
+            if (traceSetting == "on" || (traceSetting == "on-first-retry" && forceTrace))
             {
-                Screenshots = true,
-                Snapshots = true,
-                Sources = true
-            });
+                await PlaywrightDriver.Page.Context.Tracing.StartAsync(new()
+                {
+                    Screenshots = true,
+                    Snapshots = true,
+                    Sources = true
+                });
+            }
             // Resolve the page natively from the DI container instead of using 'new'
             MapsPage = ServiceProvider.GetRequiredService<IMapsPage>();
         }

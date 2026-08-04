@@ -19,19 +19,22 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     private readonly ITestSetting _testSetting;
     private readonly IPlaywrightDriver _playwrightDriver;
     private readonly IReportGenerator _reporter;
-    private readonly IMapsPage _mapsPage;
+    private IMapsPage _mapsPage; // assigned per test or reused from fixture
+    private IPage? _testPage; // when creating per-test contexts
+    private readonly TestServiceFixture _fixture;
     private readonly string _testName;
     private readonly string _className;
     private StringBuilder _consoleLogs;
+    private bool _traceStarted = false;
 
     public MapsTests(TestServiceFixture fixture, ITestOutputHelper output)
     {
+        _fixture = fixture;
         _testSetting = fixture.ServiceProvider.GetRequiredService<ITestSetting>();
         _playwrightDriver = fixture.PlaywrightDriver;
         _reporter = fixture.Reporter;
         
-        // ✅ No null-coalescing needed; Fixture initialized this before hitting this constructor
-        _mapsPage = fixture.MapsPage; // Access the IPage from the MapsPage instance
+        // Do not bind to a concrete page object here - create or reuse in InitializeAsync based on configuration
         // Use reflection on ITestOutputHelper to get the current test context safely
         (_className, _testName) = XunitContextHelper.GetTestContext(output);
         // Initialize report once per test run
@@ -43,28 +46,75 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         _mapsPage.Console += (_, msg) =>
         {
             _consoleLogs.AppendLine($"[{msg.Type.ToUpper()}] {msg.Text}");
-        };*/
+        }; */
     }
 
     // ✅ Safely handle async pre-test operations here
     public async Task InitializeAsync()
     {
-        // Use StartChunkAsync for tests sharing a ClassFixture context 
-        // to prevent "Tracing has already been started" errors.
-        await _playwrightDriver.Page.Context.Tracing.StartChunkAsync(new()
+        // Decide whether to create an independent context per test or reuse the class-level context
+        var reuseStrategy = _testSetting.ContextReuse?.ToLowerInvariant() ?? "perclass"; // "pertest" or "perclass"
+
+        // Decide tracing policy. Values: "off", "on", "on-first-retry"
+        var traceSetting = _testSetting.Trace?.ToLowerInvariant() ?? "off";
+        var forceTrace = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PLAYWRIGHT_FORCE_TRACE"));
+        var startTrace = traceSetting == "on" || (traceSetting == "on-first-retry" && forceTrace);
+
+        if (reuseStrategy == "pertest")
         {
-            Title = $"{_className}.{_testName}",
-        });
+            // Create a fresh context and page for this test
+            _testPage = await _playwrightDriver.CreateNewPageAsync();
+            _mapsPage = new MapsPage(_testPage, _reporter);
+            if (startTrace)
+            {
+                await _testPage.Context.Tracing.StartChunkAsync(new() { Title = $"{_className}.{_testName}" });
+                _traceStarted = true;
+            }
+        }
+        else if (reuseStrategy == "perclass")
+        {
+            // Reuse the shared page from the fixture (faster)
+            _mapsPage = _fixture.MapsPage;
+            if (startTrace)
+            {
+                await _playwrightDriver.Page.Context.Tracing.StartChunkAsync(new() { Title = $"{_className}.{_testName}" });
+                _traceStarted = true;
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException($"Unknown context reuse strategy: {reuseStrategy}");
+        }
     }
 
     // ✅ Safely save the trace after the test finishes
     public async Task DisposeAsync()
     {
         var traceName = $"{_testName}_{Guid.NewGuid().ToString().Substring(0, 5)}.zip";
-        await _playwrightDriver.Page.Context.Tracing.StopChunkAsync(new()
+        try
         {
-            Path = $"Traces/{traceName}"
-        });
+            if (_testPage != null)
+            {
+                if (_traceStarted)
+                {
+                    await _testPage.Context.Tracing.StopChunkAsync(new() { Path = $"Traces/{traceName}" });
+                }
+                // Close the per-test context to free resources
+                await _testPage.Context.CloseAsync();
+                _testPage = null;
+            }
+            else
+            {
+                if (_traceStarted)
+                {
+                    await _playwrightDriver.Page.Context.Tracing.StopChunkAsync(new() { Path = $"Traces/{traceName}" });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _reporter.LogInfo($"Error while stopping trace or closing context: {ex.Message}");
+        }
     }
 
     [Theory(DisplayName = "SearchSpecificLocation")]
@@ -76,7 +126,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
             // ✅ Clean, readable test logic with no null checks
             await _mapsPage.NavigateAsync(_testSetting.BaseUrl);
             _reporter.LogInfo($"Navigated to {_testSetting.BaseUrl} successfully.");
-            await _mapsPage.HandleCookiesAsync();
+            await _mapsPage.CookieConsent.HandleCookiesAsync();
             await _mapsPage.SearchLocationAsync(input);
             _reporter.LogInfo($"Search Location '{input}' executed successfully.");
 

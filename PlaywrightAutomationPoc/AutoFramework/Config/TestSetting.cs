@@ -14,6 +14,7 @@ namespace PlaywrightAutomationPoc.Config
         int SlowMo { get; set; }
         Viewport Viewport { get; set; }
         string Trace { get; set; }
+        string ContextReuse { get; set; } // "PerClass" or "PerTest"
         string Video { get; set; }
         string Screenshot { get; set; }
     }
@@ -27,16 +28,19 @@ namespace PlaywrightAutomationPoc.Config
         public int DefaultTimeout { get; set; } = 10000;
 
         [JsonPropertyName("headless")]
-        public bool Headless { get; set; } = false;
-
+        public bool Headless { get; set; } = true; // Run headless by default for faster execution
+ 
         [JsonPropertyName("browserType")]
         public string BrowserType { get; set; } = "chrome";
-
+ 
         [JsonPropertyName("devtools")]
-                public bool Devtools { get; set; } = false; // Disable devtools by default
-
+        public bool Devtools { get; set; } = false; // Disable devtools by default
+ 
         [JsonPropertyName("slowMo")]
-                public int SlowMo { get; set; } = 0; // Remove artificial slow-down for normal runs
+        public int SlowMo { get; set; } = 0; // Remove artificial slow-down for normal runs
+
+        [JsonPropertyName("contextReuse")]
+        public string ContextReuse { get; set; } = "PerClass"; // "PerClass" or "PerTest" (PerClass is faster)
 
         [JsonPropertyName("viewport")]
         public Viewport Viewport { get; set; } = new Viewport();

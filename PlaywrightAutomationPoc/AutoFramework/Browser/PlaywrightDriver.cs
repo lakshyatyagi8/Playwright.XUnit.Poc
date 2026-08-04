@@ -61,6 +61,17 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
         public IPage Page => _page ?? throw new InvalidOperationException("Browser not initialized. Call InitializeAsync first.");
 
         /// <summary>
+        /// Creates a new browser context and page. Caller should close the context when finished via page.Context.CloseAsync().
+        /// </summary>
+        public async Task<IPage> CreateNewPageAsync()
+        {
+            if (_browser == null)
+                throw new InvalidOperationException("Browser not initialized. Call InitializeAsync first.");
+            _pageFactory ??= await _pageFactoryTask.Value;
+            return await _pageFactory.CreatePageAsync(_browser, _config.GetBrowserNewPageOptions());
+        }
+
+        /// <summary>
         /// Initializes the Playwright browser and page asynchronously.
         /// </summary>
         /// <returns></returns>
