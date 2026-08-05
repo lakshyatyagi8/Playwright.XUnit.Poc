@@ -1,6 +1,7 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Playwright;
-using PlaywrightAutomationPoc.Config;
+using Microsoft.Extensions.Options;
+using PlaywrightAutomationPoc.AutoFramework.Config;
 
 namespace PlaywrightAutomationPoc.AutoFramework.Browser
 {
@@ -12,20 +13,25 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
 
     public class BrowserConfiguration : IBrowserConfiguration
     {
-        private readonly ITestSetting _testSetting;
+        private readonly PlaywrightSettings _playwrightSettings;
+        private readonly ApplicationSettings _applicationSettings;
 
-        public BrowserConfiguration(ITestSetting testSetting)
+        public BrowserConfiguration(IOptions<PlaywrightSettings> playwrightSettingsOptions, IOptions<ApplicationSettings> applicationSettingsOptions)
         {
-            _testSetting = testSetting;
+            ArgumentNullException.ThrowIfNull(playwrightSettingsOptions);
+            ArgumentNullException.ThrowIfNull(applicationSettingsOptions);
+
+            _playwrightSettings = playwrightSettingsOptions.Value ?? throw new ArgumentNullException(nameof(playwrightSettingsOptions.Value));
+            _applicationSettings = applicationSettingsOptions.Value ?? throw new ArgumentNullException(nameof(applicationSettingsOptions.Value));
         }
 
         public BrowserTypeLaunchOptions GetBrowserLaunchOptions()
         {
             return new BrowserTypeLaunchOptions
             {
-                SlowMo = _testSetting?.SlowMo ?? 0,
-                Headless = _testSetting?.Headless ?? true,
-                Channel = _testSetting?.BrowserType
+                SlowMo = _playwrightSettings?.SlowMo ?? 0,
+                Headless = _playwrightSettings?.Headless ?? true,
+                Channel = _playwrightSettings?.BrowserType
             };
         }
 
@@ -35,10 +41,10 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
             {
                 ViewportSize = new ViewportSize
                 {
-                    Width = _testSetting?.Viewport?.Width ?? 1920,
-                    Height = _testSetting?.Viewport?.Height ?? 1080
+                    Width = _playwrightSettings?.ViewportWidth ?? 1920,
+                    Height = _playwrightSettings?.ViewportHeight ?? 1080
                 },
-                BaseURL = _testSetting?.BaseUrl
+                BaseURL = _applicationSettings?.BaseUrl ?? string.Empty,
             };
         }
     }    

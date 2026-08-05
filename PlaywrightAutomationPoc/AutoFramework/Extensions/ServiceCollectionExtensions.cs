@@ -1,9 +1,7 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.AutoFramework.Reporter;
-using PlaywrightAutomationPoc.Config;
 using PlaywrightAutomationPoc.GoogleMaps.Pages;
 using Microsoft.Playwright;
 
@@ -12,9 +10,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddCoreFramework(this IServiceCollection services)
     {
         // Register core drivers and configuration
-        // Use TryAddSingleton so an externally-provided ITestSetting (e.g., loaded from Dev.json by the fixture)
-        // is not overwritten by the default TestSetting registration.
-        services.TryAddSingleton<ITestSetting, TestSetting>();
         services.AddScoped<IBrowserFactory, BrowserFactory>();
         services.AddScoped<IPlaywrightDriver, PlaywrightDriver>();
         // ✅ Add this line to register the missing IPageFactory dependency

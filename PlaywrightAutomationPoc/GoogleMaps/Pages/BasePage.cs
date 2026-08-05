@@ -29,7 +29,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         /// <returns></returns>
         public async Task NavigateAsync(string baseUrl)
         {
-            await _page.GotoAsync(baseUrl);
+            await _page.GotoAsync(baseUrl + "/maps");
         }
 
     }

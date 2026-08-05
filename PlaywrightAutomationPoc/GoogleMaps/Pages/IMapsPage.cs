@@ -8,8 +8,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         Task HandleCookiesAsync();
         Task SearchLocationAsync(string locationName);
         Task SetRouteLocationsAndSearchAsync(string startLocationName, string[] arrStopLocations = null!);
-        Task SelectFirstResultAsync();
         Task<string> GetHeadlineAsync(string sDestination);
-        Task<string> GetRouteOptionTimeAsync();
+        Task<string> GetRouteOptionTimeAsync(string routeOptionPartialText);
     }
 }

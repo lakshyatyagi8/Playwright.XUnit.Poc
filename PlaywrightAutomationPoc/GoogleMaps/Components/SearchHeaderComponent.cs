@@ -22,7 +22,14 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         public async Task SearchLocationAsync(string locationName)
         {
             await SearchBox.FillAsync(locationName);
-            await SearchButton.ClickAsync();
+            var responseTask = await _page.RunAndWaitForResponseAsync(async() => 
+                await SearchButton.ClickAsync(),
+                response => response.Url.Contains("/search?tbm=map") && response.Status == 200
+            );            
+            if(!responseTask.Ok)
+            {
+                throw new Exception($"Failed to get directions. Status: {responseTask.Status}, URL: {responseTask.Url}");
+            }
         }
     }
 }

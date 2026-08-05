@@ -2,6 +2,7 @@
 using Microsoft.Playwright;
 using PlaywrightAutomationPoc.AutoFramework.Extensions;
 using PlaywrightAutomationPoc.AutoFramework.Reporter;
+using System.Text.RegularExpressions;
 
 namespace PlaywrightAutomationPoc.GoogleMaps.Pages
 {
@@ -18,9 +19,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         private ILocator DestinationPoint => _page.GetByRole(AriaRole.Textbox, new() { Name = "Choose destination, or click" });
         // Selects the first result that looks like a location link
         private ILocator FirstResult => _page.Locator("a[href*='/place/']").First; 
-        private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;
-        private ILocator RouteOption1Time => _page.Locator("//div[@id='section-directions-trip-0']//div[contains(@class,'Fk3sm fontHeadlineSmall')]");
-        private SearchHeaderComponent SearchHeader { get; }
+        private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;        private SearchHeaderComponent SearchHeader { get; }
         
         // 2. Constructor
         // Passes the IPage instance up to the BasePage
@@ -47,24 +46,40 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         
         public async Task SetRouteLocationsAndSearchAsync(string startLocationName, string [] arrStopLocations = null!)
         {
-            if (arrStopLocations.Length == 0)
+            if (arrStopLocations == null || arrStopLocations.Length == 0)
                 throw new ArgumentException("At least one stop locations are required for a route.");
             await SearchLocationAsync(arrStopLocations[0]);
+            
             await Directions.ClickAsync();
-            await StartingPoint.SetTextValueAndEnter(startLocationName);
+            // 1. Set up the network listener task BEFORE setting the starting point to avoid race conditions
+            var responseTask = await _page.RunAndWaitForResponseAsync(async() => 
+                await StartingPoint.SetTextValueAndEnter(startLocationName),
+                "**/maps/preview/directions*"
+            );
+            if(!responseTask.Ok)
+            {
+                throw new InvalidOperationException($"Failed to get directions. Status: {responseTask.Status}, URL: {responseTask.Url}");
+            }
+            await AddMultipleDestinationPoints(arrStopLocations);
+            
+        }
+        public async Task AddMultipleDestinationPoints(string[] arrStopLocations)
+        {
             if(arrStopLocations.Length > 1)
             {
                 for(int i = 1; i < arrStopLocations.Length; i++)
                 {                    
                     await AddDestinationPoint.ClickAsync();
-                    await DestinationPoint.SetTextValueAndEnter(arrStopLocations[i]);
+                    var responseTask = await _page.RunAndWaitForResponseAsync(async() => 
+                        await DestinationPoint.SetTextValueAndEnter(arrStopLocations[i]),
+                        "**/preview/directions*"
+                    );
+                    if(!responseTask.Ok)
+                    {
+                        throw new InvalidOperationException($"Failed to get directions for stop {i}. Status: {responseTask.Status}, URL: {responseTask.Url}");
+                    }
                 }
             }
-        }
-
-        public async Task SelectFirstResultAsync()
-        {
-            await FirstResult.WaitAndClickAsync();
         }
 
         public async Task<string> GetHeadlineAsync(string sDestination)
@@ -73,10 +88,18 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
             return await Headline(sDestination).InnerTextAsync();
         }
         
-        public async Task<string> GetRouteOptionTimeAsync()
+        public async Task<string> GetRouteOptionTimeAsync(string routeOptionPartialText)
         {
-            await RouteOption1Time.WaitForAsync();
-            return await RouteOption1Time.InnerTextAsync();
+            // 1. Locate the route card by its ARIA role and containing text
+            var routeCard = _page.GetByRole(AriaRole.Link)
+                                .Filter(new LocatorFilterOptions { HasText = routeOptionPartialText });
+
+            // 2. Locate the specific div containing the minute duration using a Regex pattern
+            var minutesLocator = routeCard.Locator("div")
+                                        .Filter(new LocatorFilterOptions { HasTextRegex = new Regex(@"\d+\s*min") })
+                                        .First;
+
+            return await minutesLocator.InnerTextAsync();
         }
     }
 }
