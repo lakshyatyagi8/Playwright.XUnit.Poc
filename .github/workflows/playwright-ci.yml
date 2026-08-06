@@ -15,47 +15,47 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/dotnet/sdk:10.0  
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Restore dependencies
-      run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-    - name: Build project
-      run: dotnet build --no-restore
+      - name: Build project
+        run: dotnet build --no-restore
 
-    # We install the CLI globally so we can easily install browser binaries
-    - name: Install Playwright CLI globally
-      run: dotnet tool install --global Microsoft.Playwright.CLI
+      # We install the CLI globally so we can easily install browser binaries
+      - name: Install Playwright CLI globally
+        run: dotnet tool install --global Microsoft.Playwright.CLI
 
-    - name: Install Playwright browsers and OS dependencies
-      run: playwright install --with-deps
+      - name: Install Playwright browsers and OS dependencies
+        run: playwright install --with-deps
 
-    - name: Run Playwright Tests
-      run: dotnet test --no-build --verbosity normal
-      env:
-        # Standard .NET environment selector (loads appsettings.QA.json etc)
-        ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
-        
-        # Override BaseUrl dynamically if provided in the manual trigger
-        ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
+      - name: Run Playwright Tests
+        run: dotnet test --no-build --verbosity normal
+        env:
+          # Standard .NET environment selector (loads appsettings.QA.json etc)
+          ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
+          
+          # Override BaseUrl dynamically if provided in the manual trigger
+          ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
 
-    - name: Upload Extent HTML Report
-      uses: actions/upload-artifact@v4
-      if: always() # Ensure reports are uploaded even if tests fail
-      with:
-        name: Extent-Test-Report
-        # Use glob pattern to find the Reports folder regardless of output directory
-        path: '**/Reports/'
-        retention-days: 30
+      - name: Upload Extent HTML Report
+        uses: actions/upload-artifact@v4
+        if: always() # Ensure reports are uploaded even if tests fail
+        with:
+          name: Extent-Test-Report
+          # Use glob pattern to find the Reports folder regardless of output directory
+          path: '**/Reports/'
+          retention-days: 30
 
-    - name: Upload Playwright Traces & Videos
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: Playwright-Traces
-        path: |
-          **/Traces/
-          **/TestResults/Videos/
-        retention-days: 30
+      - name: Upload Playwright Traces & Videos
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Playwright-Traces
+          path: |
+            **/Traces/
+            **/TestResults/Videos/
+          retention-days: 30
