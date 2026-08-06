@@ -30,7 +30,7 @@ jobs:
         run: dotnet tool install --global Microsoft.Playwright.CLI
         
       - name: Install Playwright Dependencies
-        run: pwsh Accessories.E2ETests/bin/Debug/net10.0/playwright.ps1 install --with-deps
+        run: pwsh PlaywrightAutomationPoc/bin/Debug/net10.0/playwright.ps1 install --with-deps
 
       - name: Run Playwright Tests
         run: dotnet test --no-build --verbosity normal
