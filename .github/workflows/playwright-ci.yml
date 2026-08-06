@@ -1,6 +1,23 @@
-name: Containerized CI Tests
+name: Playwright Tests
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run tests against'
+        required: true
+        default: 'QA'
+        type: choice
+        options:
+          - QA
+          - Staging
+          - Production
+      
+      base_url:
+        description: 'Base URL for application settings'
+        required: false
+        default: 'https://www.google.com'
+        type: string
   push:
     branches:
       - main
