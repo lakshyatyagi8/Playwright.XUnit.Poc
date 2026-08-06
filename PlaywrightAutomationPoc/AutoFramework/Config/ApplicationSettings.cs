@@ -3,6 +3,6 @@ namespace PlaywrightAutomationPoc.AutoFramework.Config
 {
     public class ApplicationSettings
     {
-        public string BaseUrl { get; set; } = string.Empty;
+        public string BaseUrl { get; set; } = "http://www.google.com";
     }
 }

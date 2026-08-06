@@ -41,8 +41,8 @@ jobs:
           # Enforce headless mode in CI to avoid X server / display requirements
           PlaywrightSettings__Headless: true
 
-          # Override BaseUrl dynamically if provided in the manual trigger
-          ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
+          # Override BaseUrl dynamically if provided in the manual trigger, otherwise default to Google Maps
+          ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url || 'https://www.google.com' }}
 
       - name: Upload Extent HTML Report
         uses: actions/upload-artifact@v4

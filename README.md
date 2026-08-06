@@ -9,6 +9,7 @@ This repository contains a modular and scalable C# .NET test automation framewor
   - ApplicationSettings for application-level values such as BaseUrl.
   - PlaywrightSettings for browser/runtime options such as BrowserType, Headless, Tracing, Video, Screenshot, and viewport values.
 - Test initialization is centralized through TestServiceFixture, where PlaywrightSettings and ApplicationSettings are resolved and injected into the framework.
+- Environment overrides may supply BaseUrl at runtime, with CI falling back to https://www.google.com/maps when no value is provided.
 - Each test uses try/catch handling to explicitly log pass and fail outcomes through the Extent report, making the HTML report suitable for management reporting and defect analysis.
 
 ## Framework highlights
