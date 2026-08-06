@@ -17,7 +17,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         /// <summary>
         /// Searches for a location using the search box.
         /// </summary>
-        /// <param name="locationName"></param>
+        /// <param name="locationName">Location name to search for</param>
         /// <returns></returns>
         public async Task SearchLocationAsync(string locationName)
         {

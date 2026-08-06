@@ -42,7 +42,15 @@ namespace PlaywrightAutomationPoc.AutoFramework.Browser
         public async Task InitializeAsync()
         {
             _browser = await InitializePlaywrightBrowserAsync();
-            _page = await _pageFactory.CreatePageAsync(_browser, _config.GetBrowserNewPageOptions());            
+            
+            var contextOptions = _config.GetBrowserNewPageOptions();
+            var videoSetting = _playwrightSettings.Video?.ToLowerInvariant() ?? "off";
+            if (videoSetting == "on" || videoSetting == "retain-on-failure")
+            {
+                contextOptions.RecordVideoDir = "videos";
+                contextOptions.RecordVideoSize = new RecordVideoSize { Width = _playwrightSettings.ViewportWidth, Height = _playwrightSettings.ViewportHeight };
+            }
+            _page = await _pageFactory.CreatePageAsync(_browser, contextOptions);            
         }
 
         private async Task<IBrowser> InitializePlaywrightBrowserAsync()

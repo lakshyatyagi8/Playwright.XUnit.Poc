@@ -1,5 +1,4 @@
 // Copyright lakshyatyagi8@gmail.com. All Rights Reserved.
-using Microsoft.Extensions.Options;
 using PlaywrightAutomationPoc.AutoFramework.Browser;
 using PlaywrightAutomationPoc.AutoFramework.Reporter;
 using PlaywrightAutomationPoc.AutoFramework.Config;
@@ -27,6 +26,7 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     private readonly string _className;
     private StringBuilder _consoleLogs;
     private bool _traceStarted = false;
+    private bool _testFailed = false;
 
     public MapsTests(
         TestServiceFixture fixture,
@@ -34,8 +34,8 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     {
         _fixture = fixture;
         // Retrieve settings from the test fixture to avoid xUnit fixture binding issues
-        _playwrightSettings = fixture._playwrightSettings;
-        _applicationSettings = fixture._applicationSettings;
+        _playwrightSettings = fixture.PlaywrightSettings;
+        _applicationSettings = fixture.ApplicationSettings;
         _playwrightDriver = fixture.PlaywrightDriver;
         _reporter = fixture.Reporter;
         _mapsPage = fixture.MapsPage;
@@ -50,55 +50,67 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
     {
         var reuseStrategy = "perclass"; 
 
-        var traceSetting = _playwrightSettings.Tracing?.ToLowerInvariant() ?? "off";
-        var forceTrace = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PLAYWRIGHT_FORCE_TRACE"));
-        var startTrace = traceSetting == "on" || (traceSetting == "on-first-retry" && forceTrace);
-
+        // 1. Initialize Page/Context based on strategy
         if (reuseStrategy == "pertest")
         {
             _testPage = await _playwrightDriver.CreateNewPageAsync();
             _mapsPage = new MapsPage(_testPage, _reporter);
-            if (startTrace)
-            {
-                await _testPage.Context.Tracing.StartChunkAsync(new() { Title = $"{_className}.{_testName}" });
-                _traceStarted = true;
-            }
-        }
-        else if (reuseStrategy == "perclass")
-        {
-            _mapsPage = _fixture.MapsPage;
-            if (startTrace)
-            {
-                await _playwrightDriver.Page.Context.Tracing.StartChunkAsync(new() { Title = $"{_className}.{_testName}" });
-                _traceStarted = true;
-            }
         }
         else
         {
-            throw new InvalidOperationException($"Unknown context reuse strategy: {reuseStrategy}");
+            _mapsPage = _fixture.MapsPage as MapsPage ?? throw new InvalidOperationException("MapsPage not found in fixture.");
+        }
+
+        // 2. Resolve the active context (Test-specific OR Global)
+        var activeContext = _testPage?.Context ?? _playwrightDriver.Page.Context;
+        // 3. Apply tracing to the resolved context
+        var traceSetting = _playwrightSettings.Tracing?.ToLowerInvariant() ?? "off";
+        
+        if (traceSetting == "on" || (traceSetting == "on-first-retry") || traceSetting == "retain-on-failure")
+        {
+            if (reuseStrategy == "pertest" && _testPage != null)
+            {
+                var screenshotSetting = _playwrightSettings.Screenshot?.ToLowerInvariant() ?? "off";
+                await activeContext.Tracing.StartAsync(new()
+                {
+                    Screenshots = screenshotSetting == "on" || screenshotSetting == "only-on-failure",
+                    Snapshots = true,
+                    Sources = true
+                });
+            }
+
+            await activeContext.Tracing.StartChunkAsync(new() { Title = $"{_className}.{_testName}" });
+            _traceStarted = true;
         }
     }
 
     public async Task DisposeAsync()
     {
-        var traceName = $"{_testName}_{Guid.NewGuid().ToString().Substring(0, 5)}.zip";
         try
         {
+            var activeContext = _testPage?.Context ?? _playwrightDriver.Page.Context;
+            var traceSetting = _playwrightSettings.Tracing?.ToLowerInvariant() ?? "off";
+            var shouldSaveTrace = traceSetting == "on" || (traceSetting == "retain-on-failure" && _testFailed);
+
+            // 1. Handle Tracing uniformly
+            if (_traceStarted && activeContext != null)
+            {
+                if (shouldSaveTrace)
+                {
+                    var traceName = $"Traces/{_testName}_{Guid.NewGuid().ToString("N")[..5]}.zip";
+                    await activeContext.Tracing.StopChunkAsync(new() { Path = traceName });
+                }
+                else
+                {
+                    await activeContext.Tracing.StopChunkAsync(); // Discard memory buffer
+                }
+            }
+
+            // 2. Close isolated context if using 'pertest'
             if (_testPage != null)
             {
-                if (_traceStarted)
-                {
-                    await _testPage.Context.Tracing.StopChunkAsync(new() { Path = $"Traces/{traceName}" });
-                }
                 await _testPage.Context.CloseAsync();
                 _testPage = null;
-            }
-            else
-            {
-                if (_traceStarted)
-                {
-                    await _playwrightDriver.Page.Context.Tracing.StopChunkAsync(new() { Path = $"Traces/{traceName}" });
-                }
             }
         }
         catch (Exception ex)
@@ -126,14 +138,15 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
         }
         catch (Exception ex)
         {
+            _testFailed = true;
             _reporter.LogFail($"Test {_className}.{_testName} failed with exception: {ex.Message}");
-            throw; 
+            throw;
         }
     }
     
     [Theory]
-    [InlineData("26 Tandy's Pl, Doddsborough", new string[] { "Esker Educate Together National School", "Verizon Connect Ireland" })]
-    public async Task SetRouteDirections(string startLocation, string[] stopLocations)
+    [InlineData("26 Tandy's Pl, Doddsborough", new string[] { "Esker Educate Together National School", "Verizon Connect Ireland" }, "via L1030")]
+    public async Task SetRouteDirections(string startLocation, string[] stopLocations, string expectedRouteName)
     {
         try
         {
@@ -144,15 +157,16 @@ public class MapsTests : IClassFixture<TestServiceFixture>, IAsyncLifetime
             await _mapsPage.HandleCookiesAsync();
             await _mapsPage.SetRouteLocationsAndSearchAsync(startLocation, stopLocations);
             
-            var routeOptionFullString = await _mapsPage.GetRouteOptionTimeAsync("via");
+            var routeOptionFullString = await _mapsPage.GetRouteOptionInnerTextAsync(expectedRouteName);
             var routeTimeString = routeOptionFullString
-                ?.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                ?.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries)
                 .FirstOrDefault(s => s.Contains("min")) ?? string.Empty;
             Assert.Contains("min", routeTimeString, StringComparison.OrdinalIgnoreCase);
             _reporter.LogPass($"Test {_className}.{_testName} passed.");
         }
         catch (Exception ex)
         {
+            _testFailed = true;
             _reporter.LogFail($"Test {_className}.{_testName} failed with exception: {ex.Message}");
             throw; 
         }

@@ -10,17 +10,16 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
     {
         
         // Locators are defined as properties (Encapsulation)
-
+        private SearchHeaderComponent SearchHeader { get; }
         private ILocator Directions => _page.GetByRole(AriaRole.Button, new() { Name = "Directions" });
 
         private ILocator StartingPoint => _page.GetByRole(AriaRole.Textbox, new() { Name = "Choose starting point, or" });
 
         private ILocator AddDestinationPoint => _page.GetByRole(AriaRole.Button, new() { Name = "Add destination" });
         private ILocator DestinationPoint => _page.GetByRole(AriaRole.Textbox, new() { Name = "Choose destination, or click" });
-        // Selects the first result that looks like a location link
-        private ILocator FirstResult => _page.Locator("a[href*='/place/']").First; 
-        private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;        private SearchHeaderComponent SearchHeader { get; }
         
+        private ILocator Headline(string sDestination) => _page.Locator($"div[aria-label*='{sDestination}']").First;        
+                
         // 2. Constructor
         // Passes the IPage instance up to the BasePage
         public MapsPage(IPage page, IReportGenerator reporter) : base(page, reporter)
@@ -65,19 +64,22 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
         }
         public async Task AddMultipleDestinationPoints(string[] arrStopLocations)
         {
-            if(arrStopLocations.Length > 1)
+            if (arrStopLocations.Length <= 1)
             {
-                for(int i = 1; i < arrStopLocations.Length; i++)
-                {                    
-                    await AddDestinationPoint.ClickAsync();
-                    var responseTask = await _page.RunAndWaitForResponseAsync(async() => 
-                        await DestinationPoint.SetTextValueAndEnter(arrStopLocations[i]),
-                        "**/preview/directions*"
-                    );
-                    if(!responseTask.Ok)
-                    {
-                        throw new InvalidOperationException($"Failed to get directions for stop {i}. Status: {responseTask.Status}, URL: {responseTask.Url}");
-                    }
+                return;
+            }
+
+            foreach (var stopLocation in arrStopLocations.Skip(1))
+            {
+                await AddDestinationPoint.ClickAsync();
+                var responseTask = await _page.RunAndWaitForResponseAsync(async () =>
+                    await DestinationPoint.SetTextValueAndEnter(stopLocation),
+                    "**/preview/directions*"
+                );
+
+                if (!responseTask.Ok)
+                {
+                    throw new InvalidOperationException($"Failed to get directions for stop '{stopLocation}'. Status: {responseTask.Status}, URL: {responseTask.Url}");
                 }
             }
         }
@@ -88,7 +90,7 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Pages
             return await Headline(sDestination).InnerTextAsync();
         }
         
-        public async Task<string> GetRouteOptionTimeAsync(string routeOptionPartialText)
+        public async Task<string> GetRouteOptionInnerTextAsync(string routeOptionPartialText)
         {
             // 1. Locate the route card by its ARIA role and containing text
             var routeCard = _page.GetByRole(AriaRole.Link)

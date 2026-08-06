@@ -21,10 +21,10 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
     /// </summary>
     public class TestServiceFixture : ITestServiceFixture
     {
-        public PlaywrightSettings _playwrightSettings;
-        public ApplicationSettings _applicationSettings;
+        public PlaywrightSettings PlaywrightSettings;
+        public ApplicationSettings ApplicationSettings;
         public IServiceProvider ServiceProvider { get; }
-        public IPlaywrightDriver PlaywrightDriver { get; }        
+        public IPlaywrightDriver PlaywrightDriver { get; }
         public IReportGenerator Reporter { get; }
         
         public IMapsPage MapsPage { get; private set; } = null!;
@@ -42,22 +42,24 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
                 .AddEnvironmentVariables() // CLI Env Vars override JSON automatically
                 .Build();
 
-            // 2. Bind Configuration to Classes using the Options Pattern
+            // 2. Bind Configuration to Test Classes using the Options Pattern
             services.Configure<PlaywrightSettings>(configuration.GetSection("PlaywrightSettings"));
             services.Configure<ApplicationSettings>(configuration.GetSection("ApplicationSettings"));
 
             // 2. Invoke framework extension methods
+            // populates the container with all the drivers and reporters
             services.AddCoreFramework();
+            // populates all your page objects
             services.AddGoogleMapsPages();
 
             // 3. Build the provider EXACTLY ONCE
+            // freezes the container blueprint and creates the actual container
             ServiceProvider = services.BuildServiceProvider();
 
             // 4. Resolve the driver (DI handles the injection of IBrowserProvider & IPageFactory)
             PlaywrightDriver = ServiceProvider.GetRequiredService<IPlaywrightDriver>();
-            _playwrightSettings = ServiceProvider.GetRequiredService<IOptions<PlaywrightSettings>>().Value;
-            _applicationSettings = ServiceProvider.GetRequiredService<IOptions<ApplicationSettings>>().Value;
-            
+            PlaywrightSettings = ServiceProvider.GetRequiredService<IOptions<PlaywrightSettings>>().Value;
+            ApplicationSettings = ServiceProvider.GetRequiredService<IOptions<ApplicationSettings>>().Value;
             
             Reporter = ServiceProvider.GetRequiredService<IReportGenerator>(); // Resolve Reporter
             // Initialize report once per test run
@@ -71,13 +73,14 @@ namespace PlaywrightAutomationPoc.GoogleMaps.Tests
             // Initialize the browser context asynchronously
             await PlaywrightDriver.InitializeAsync();
             // Start tracing only if configured. Values: "off", "on", "on-first-retry". "on-first-retry" requires setting PLAYWRIGHT_FORCE_TRACE in the environment to enable tracing for a retry.
-            var traceSetting = _playwrightSettings.Tracing?.ToLowerInvariant() ?? "off";
-            var forceTrace = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("PLAYWRIGHT_FORCE_TRACE"));
-            if (traceSetting == "on" || (traceSetting == "on-first-retry" && forceTrace))
+            var traceSetting = PlaywrightSettings.Tracing?.ToLowerInvariant() ?? "off";
+            var screenshotSetting = PlaywrightSettings.Screenshot?.ToLowerInvariant() ?? "off";
+            
+            if (traceSetting == "on" || (traceSetting == "retain-on-failure"))
             {
                 await PlaywrightDriver.Page.Context.Tracing.StartAsync(new()
                 {
-                    Screenshots = true,
+                    Screenshots = screenshotSetting == "on" || screenshotSetting == "only-on-failure",
                     Snapshots = true,
                     Sources = true
                 });
