@@ -1,20 +1,56 @@
 # Playwright xUnit Automation Framework
 
-This repository contains a modular and scalable test automation framework built with C# .NET, Playwright, xUnit, and Microsoft.Extensions.DependencyInjection. It follows the Page Object Model (POM) and uses a scoped dependency injection container to keep browser state isolated across tests.
+This repository contains a modular and scalable C# .NET test automation framework built with Playwright, xUnit, and Microsoft.Extensions.DependencyInjection. The framework uses the Page Object Model (POM), a fixture-based initialization flow, and configuration-driven setup to keep browser state isolated across tests while producing rich HTML execution reports for management review.
+
+## Recent updates
+
+- Configuration is now loaded from appsettings.json and can be overridden through environment variables or environment-specific files such as appsettings.QA.json.
+- Runtime settings are bound to dedicated configuration classes using the Options pattern:
+  - ApplicationSettings for application-level values such as BaseUrl.
+  - PlaywrightSettings for browser/runtime options such as BrowserType, Headless, Tracing, Video, Screenshot, and viewport values.
+- Test initialization is centralized through TestServiceFixture, where PlaywrightSettings and ApplicationSettings are resolved and injected into the framework.
+- Each test uses try/catch handling to explicitly log pass and fail outcomes through the Extent report, making the HTML report suitable for management reporting and defect analysis.
 
 ## Framework highlights
 
-- Browser lifecycle and Playwright page management are handled in the AutoFramework layer.
+- Browser lifecycle, Playwright page creation, and page initialization are handled in the AutoFramework layer.
 - Shared page behavior is centralized in BasePage, which provides common actions such as navigation, cookie handling, and reusable locators.
 - Extent Reports are integrated for rich HTML reporting and are written to Reports/test-report.html.
-- Playwright tracing is enabled per test and saved as ZIP files under the Traces folder.
+- Playwright tracing, screenshots, and video capture are configured through PlaywrightSettings and produced as artifacts when enabled.
 - Test isolation is enforced through TestServiceFixture and scoped services.
 
 ## Architecture overview
 
-- AutoFramework: core engine for browser setup, Playwright driver management, DI registration, and reporting.
-- GoogleMaps: feature-specific pages and test classes for the Google Maps scenario.
-- Environment/Dev.json: environment-specific test settings bound through the TestSetting model.
+- AutoFramework: core engine for browser setup, Playwright driver management, DI registration, configuration binding, and reporting.
+- GoogleMaps: feature-specific pages and xUnit test classes for the Google Maps scenario.
+- Configuration: appsettings.json contains PlaywrightSettings and ApplicationSettings sections and is loaded through the Options pattern.
+
+## Configuration model
+
+The framework uses standard .NET configuration binding:
+
+- appsettings.json is loaded from the output directory.
+- Environment-specific overrides can be added through appsettings.{Environment}.json.
+- Environment variables can override JSON values at runtime.
+- The bound models are:
+  - PlaywrightSettings: browser, tracing, video, screenshot, viewport, and timeout settings.
+  - ApplicationSettings: application entry points such as BaseUrl.
+
+Example configuration:
+
+```json
+{
+  "PlaywrightSettings": {
+    "BrowserType": "chromium",
+    "Headless": false,
+    "Tracing": "retain-on-failure",
+    "Screenshot": "only-on-failure"
+  },
+  "ApplicationSettings": {
+    "BaseUrl": "https://www.google.com"
+  }
+}
+```
 
 ## Adding a new page
 
@@ -52,15 +88,17 @@ services.AddTransient<LoginPage>();
 ## Adding a new test
 
 1. Create a test class in the relevant domain folder.
-2. Use TestServiceFixture so the test receives the configured DI container and Playwright driver.
+2. Use TestServiceFixture so the test receives the configured DI container, Playwright driver, and report generator.
 3. Resolve the needed page objects from the fixture or container.
-4. Keep assertions and workflow steps in the test body, while page-specific UI logic stays in the page object.
+4. Wrap the workflow in try/catch blocks and log pass/fail events using the reporter so Extent captures the result.
+5. Keep assertions and workflow steps in the test body, while page-specific UI logic stays in the page object.
 
 ## Reporting and tracing
 
 - Extent Reports are initialized once per test run and create a test node for each executed test.
 - The reporter logs informational, pass, and fail events directly into the HTML report.
-- Playwright tracing is started before each test and stopped afterward, producing trace artifacts in the Traces folder.
+- Playwright tracing is started before each test and stopped afterward, producing trace artifacts in the Traces folder when configured.
+- Failures are surfaced with exception details and, when available, screenshots attached to the report.
 
 ## Best practices
 
@@ -68,4 +106,4 @@ services.AddTransient<LoginPage>();
 - Use AddScoped for core engine services that must share a browser context safely.
 - Use AddTransient for page objects so each test gets a clean instance.
 - Keep shared navigation and cookie logic in BasePage instead of duplicating it in each page object.
-- Keep test data in configuration files rather than hardcoding values in tests.
+- Keep runtime behavior and test data in configuration files rather than hardcoding values in tests.
