@@ -18,6 +18,7 @@ This repository contains a modular and scalable C# .NET test automation framewor
 - Extent Reports are integrated for rich HTML reporting and are written to Reports/test-report.html.
 - Playwright tracing, screenshots, and video capture are configured through PlaywrightSettings and produced as artifacts when enabled.
 - Test isolation is enforced through TestServiceFixture and scoped services.
+- CI workflows enforce headless browser execution to avoid X server/display errors in Linux containers.
 
 ## Architecture overview
 

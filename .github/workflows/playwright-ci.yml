@@ -37,7 +37,10 @@ jobs:
         env:
           # Standard .NET environment selector (loads appsettings.QA.json etc)
           ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
-          
+
+          # Enforce headless mode in CI to avoid X server / display requirements
+          PlaywrightSettings__Headless: true
+
           # Override BaseUrl dynamically if provided in the manual trigger
           ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
 
