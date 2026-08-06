@@ -1,49 +1,61 @@
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+name: Containerized CI Tests
 
-  - name: Setup .NET SDK
-    uses: actions/setup-dotnet@v4
-    with:
-      dotnet-version: '10.0.x'
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
-  - name: Restore dependencies
-    run: dotnet restore
+jobs:
+  playwright-tests:
+    name: Playwright Tests
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/dotnet/sdk:10.0  
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  - name: Build project
-    run: dotnet build --no-restore
+    - name: Restore dependencies
+      run: dotnet restore
 
-  # We install the CLI globally so we can easily install browser binaries
-  - name: Install Playwright CLI globally
-    run: dotnet tool install --global Microsoft.Playwright.CLI
+    - name: Build project
+      run: dotnet build --no-restore
 
-  - name: Install Playwright browsers and OS dependencies
-    run: playwright install --with-deps
+    # We install the CLI globally so we can easily install browser binaries
+    - name: Install Playwright CLI globally
+      run: dotnet tool install --global Microsoft.Playwright.CLI
 
-  - name: Run Playwright Tests
-    run: dotnet test --no-build --verbosity normal
-    env:
-      # Standard .NET environment selector (loads appsettings.QA.json etc)
-      ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
-      
-      # Override BaseUrl dynamically if provided in the manual trigger
-      ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
+    - name: Install Playwright browsers and OS dependencies
+      run: playwright install --with-deps
 
-  - name: Upload Extent HTML Report
-    uses: actions/upload-artifact@v4
-    if: always() # Ensure reports are uploaded even if tests fail
-    with:
-      name: Extent-Test-Report
-      # Use glob pattern to find the Reports folder regardless of output directory
-      path: '**/Reports/'
-      retention-days: 30
+    - name: Run Playwright Tests
+      run: dotnet test --no-build --verbosity normal
+      env:
+        # Standard .NET environment selector (loads appsettings.QA.json etc)
+        ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
+        
+        # Override BaseUrl dynamically if provided in the manual trigger
+        ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
 
-  - name: Upload Playwright Traces & Videos
-    uses: actions/upload-artifact@v4
-    if: always()
-    with:
-      name: Playwright-Traces
-      path: |
-        **/Traces/
-        **/TestResults/Videos/
-      retention-days: 30
+    - name: Upload Extent HTML Report
+      uses: actions/upload-artifact@v4
+      if: always() # Ensure reports are uploaded even if tests fail
+      with:
+        name: Extent-Test-Report
+        # Use glob pattern to find the Reports folder regardless of output directory
+        path: '**/Reports/'
+        retention-days: 30
+
+    - name: Upload Playwright Traces & Videos
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Playwright-Traces
+        path: |
+          **/Traces/
+          **/TestResults/Videos/
+        retention-days: 30
