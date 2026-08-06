@@ -1,6 +1,13 @@
 name: Playwright Tests
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  
   workflow_dispatch:
     inputs:
       environment:
@@ -18,13 +25,6 @@ on:
         required: false
         default: 'https://www.google.com'
         type: string
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 jobs:
   playwright-tests:
