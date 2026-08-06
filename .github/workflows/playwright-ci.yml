@@ -1,55 +1,49 @@
 steps:
-# STREAMING_CHUNK: Setting up repository and .NET...
-- name: Checkout code
-  uses: actions/checkout@v4
+  - name: Checkout code
+    uses: actions/checkout@v4
 
-- name: Setup .NET SDK
-  uses: actions/setup-dotnet@v4
-  with:
-    dotnet-version: '10.0.x' # Matches your .NET 10 requirement
-    # quality: 'preview' # Uncomment if .NET 10 still requires the preview flag
+  - name: Setup .NET SDK
+    uses: actions/setup-dotnet@v4
+    with:
+      dotnet-version: '10.0.x'
 
-# STREAMING_CHUNK: Restoring and Building...
-- name: Restore dependencies
-  run: dotnet restore
+  - name: Restore dependencies
+    run: dotnet restore
 
-- name: Build project
-  run: dotnet build --no-restore
+  - name: Build project
+    run: dotnet build --no-restore
 
-# STREAMING_CHUNK: Installing Playwright...
-# We install the CLI globally so we don't have to guess the output bin/Debug/net10.0 path
-- name: Install Playwright CLI globally
-  run: dotnet tool install --global Microsoft.Playwright.CLI
+  # We install the CLI globally so we can easily install browser binaries
+  - name: Install Playwright CLI globally
+    run: dotnet tool install --global Microsoft.Playwright.CLI
 
-- name: Install Playwright browsers and OS dependencies
-  run: playwright install --with-deps
+  - name: Install Playwright browsers and OS dependencies
+    run: playwright install --with-deps
 
-# STREAMING_CHUNK: Executing Tests...
-- name: Run Playwright Tests
-  run: dotnet test --no-build --verbosity normal
-  env:
-    # Standard .NET environment selector (loads appsettings.QA.json etc)
-    ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
-    
-    # Override BaseUrl dynamically if provided in the manual trigger
-    ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
+  - name: Run Playwright Tests
+    run: dotnet test --no-build --verbosity normal
+    env:
+      # Standard .NET environment selector (loads appsettings.QA.json etc)
+      ASPNETCORE_ENVIRONMENT: ${{ github.event.inputs.environment || 'QA' }}
+      
+      # Override BaseUrl dynamically if provided in the manual trigger
+      ApplicationSettings__BaseUrl: ${{ github.event.inputs.base_url }}
 
-# STREAMING_CHUNK: Archiving Artifacts...
-- name: Upload Extent HTML Report
-  uses: actions/upload-artifact@v4
-  if: always() # Ensure reports are uploaded even if tests fail
-  with:
-    name: Extent-Test-Report
-    # Use glob pattern to find the Reports folder regardless of output directory
-    path: '**/Reports/'
-    retention-days: 30
+  - name: Upload Extent HTML Report
+    uses: actions/upload-artifact@v4
+    if: always() # Ensure reports are uploaded even if tests fail
+    with:
+      name: Extent-Test-Report
+      # Use glob pattern to find the Reports folder regardless of output directory
+      path: '**/Reports/'
+      retention-days: 30
 
-- name: Upload Playwright Traces & Videos
-  uses: actions/upload-artifact@v4
-  if: always()
-  with:
-    name: Playwright-Traces
-    path: |
-      **/Traces/
-      **/TestResults/Videos/
-    retention-days: 30
+  - name: Upload Playwright Traces & Videos
+    uses: actions/upload-artifact@v4
+    if: always()
+    with:
+      name: Playwright-Traces
+      path: |
+        **/Traces/
+        **/TestResults/Videos/
+      retention-days: 30
